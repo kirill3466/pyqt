@@ -13,34 +13,41 @@ from database_query import if_not_exists
 
 class TaskManager:
 
-    def __init__(self, user_name):
+    def __init__(self, user_name = None):
         self.username = user_name
         self.database = ""
+        self.connect_function = """      
+        with sqlite3.connect("database/database.db") as db:
+            cur = db.cursor()
+            username_container = [username]
+            """
 
     def data_files(self):
         if not os.path.isdir("database"):
             os.mkdir("database")
 
-    def data_files_tasks():
+    def data_files_tasks(self):
         with sqlite3.connect("database/database.db") as db:
             cur = db.cursor()
 
             cur.executescript(if_not_exists)
 
 
-    def main(self, choice=None):
+    def main(self, choice=None, password=None, username=None ):
         os.system('cls')
         print("Меню")
         choice = input("1 - Вход \n2 - Регистрация \n3 - Выход \nВыберите пункт: ")
-        if choice == "1":
-            self.log_in()
-        elif choice == "2":
-            TaskManager.sign_up()
-        elif choice == "3":
-            TaskManager.exitt()
+        self.return_function_for_main(choice, username, password)
 
+    def return_function_for_main(self, choice, username, password):
+        funcctions = {
+            1: self.log_in(),
+            2: self.sign_up(),
+            3: self.exitt(),
+        }
+        return funcctions.get(int(choice))
 
-    def exitt():
+    def exitt(self):
         sys.exit()
 
     def return_function(self, choice, username, password):
@@ -63,7 +70,7 @@ class TaskManager:
         os.system('cls')
 
 
-    def add_task(username,password):
+    def add_task(self, username, password):
             #tid = str(uuid.uuid4().fields[-1])[:5]
             with sqlite3.connect("database/database.db", detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as db:
                 cur = db.cursor()
@@ -88,7 +95,7 @@ class TaskManager:
                     cur.execute('INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)', (username, date, content, status, time.ctime()))
                 else:
                     cur.execute('INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?, ?)', (username, date, content, steps_string, status, time.ctime()))
-            TaskManager.task_manager(username, password)
+            self.task_manager(username, password)
 
             
     def all_tasks(self, username, password):
@@ -99,19 +106,19 @@ class TaskManager:
                 cur = db.cursor()
                 username_container = [username]
                 execute = cur.execute('SELECT * from userstasks WHERE username = ?', (username_container))
-                if TaskManager.tasks_exists(username, password) == True:
+                if self.tasks_exists(username, password):
                     for row in execute:
                         print(row)
                 else:
                     print("У пользователя нет никаких задач!")
-            TaskManager.task_manager(username,password)
+            self.task_manager(username,password)
 
     @staticmethod
     def func_for_status(t1, t2):
         return any(t1 <= t2)
 
 
-    def tasks_status(username, password): 
+    def tasks_status(self, username, password):
             print('Задачи по статусу \n1- Просроченные задачи \n2- Задачи на сегодня \n3- Задачи на 3 дня')
             status_choice = input('Введите пункт: ')
             message = None
@@ -122,7 +129,7 @@ class TaskManager:
                 username_container = [username]
                 execute = cur.execute('SELECT date from userstasks WHERE username = ?', (username_container))
                 if status_choice == '1':
-                        if TaskManager.tasks_exists(username, password) == True:
+                        if self.tasks_exists(username, password):
                             for row in execute:
                                 cur.execute('SELECT * from userstasks WHERE username = ? ', (username_container))
                                 task_date = cur.fetchall()
@@ -138,9 +145,9 @@ class TaskManager:
                             pprint.pprint(status)
                         else:
                             print('Просроченных задач не нашлось!')
-                        TaskManager.task_manager(username,password)
+                        self.task_manager(username,password)
                 elif status_choice == '2':
-                        if TaskManager.compare_data(username, password) == True:                               
+                        if self.compare_data(username, password):
                             for row in execute:
                                 cur.execute('SELECT * from userstasks WHERE username = ?', (username_container))
                                 task_date = cur.fetchall()
@@ -156,10 +163,10 @@ class TaskManager:
                             pprint.pprint(status)
                         else:
                             print('Задач на сегодня не нашлось!')
-                        TaskManager.task_manager(username,password)
+                        self.task_manager(username,password)
                        
                 elif status_choice == '3':
-                        if TaskManager.compare_data(username, password) == True:         
+                        if self.compare_data(username, password) == True:
                             for row in execute:
                                 cur.execute('SELECT * from userstasks WHERE username = ?', (username_container))
                                 task_date = cur.fetchall()
@@ -175,7 +182,7 @@ class TaskManager:
                             pprint.pprint(status)
                         else:
                             print('Задач на ближайшие 3 дня не нашлось!')
-                        TaskManager.task_manager(username, password)
+                        self.task_manager(username, password)
 
     def update_status(self, username: str, password: str):
         if self.tasks_exists(username, password):
@@ -205,35 +212,35 @@ class TaskManager:
                     cur.execute('UPDATE userstasks SET status = ? WHERE username = ? AND tid = ?', update_variables)
                 else:
                     print('Введите завершено или отменено!')
-                TaskManager.task_manager(username, password)
+                self.task_manager(username, password)
         else:
                 print('У пользователя нет задач')           
-                TaskManager.task_manager(username, password)
-        TaskManager.task_manager(username, password)
+                self.task_manager(username, password)
+        self.task_manager(username, password)
         
-    def sign_up():
+    def sign_up(self):
         os.system('cls')
         print("Введите имя и пароль для регистрации")
         username = input("Введите имя: ")
         password = input("Введите пароль: ")
         password1 = input('Подтвердите пароль: ')
-        TaskManager.compare_data(username, password)
+        self.compare_data(username, password)
         if password != password1:
                 print("Пароли не совпадают!")
-                TaskManager.main()
+                self.main()
         else:
             with sqlite3.connect("database/database.db") as db:
                     cur = db.cursor()
                     user_info = [username, password]
-                    if TaskManager.user_exists(username, password):
+                    if self.user_exists(username, password):
                         print("Такой пользователь уже существует")
                     else:
                         cur.execute('INSERT INTO usersdata(username, password) VALUES (?, ?)', user_info)
                         print('Регистрация прошла успешно!')
-            TaskManager.main()
+            self.main()
 
         
-    def tasks_exists(username, password):
+    def tasks_exists(self, username, password):
         with sqlite3.connect("database/database.db") as db:
             cur = db.cursor()
             cur.execute('SELECT * from userstasks ')
@@ -241,7 +248,7 @@ class TaskManager:
             if username in names:
                 return True
     
-    def user_exists(username, password):              
+    def user_exists(self, username, password):
         with sqlite3.connect("database/database.db") as db:
             cur = db.cursor()
             cur.execute("SELECT username FROM usersdata")
@@ -252,7 +259,7 @@ class TaskManager:
 
 
 
-    def compare_data(username, password):
+    def compare_data(self, username, password):
         with sqlite3.connect("database/database.db") as db:
             user_input = (username, password)
             cur = db.cursor()
@@ -262,25 +269,25 @@ class TaskManager:
                 if user_input == i:
                     return True
                             
-    def log_in():
+    def log_in(self):
         os.system('cls')
         print('Введите данные для входа')
         username = input('Имя: ')
         password = input('Пароль: ')
-        if TaskManager.user_exists(username, password) ==  True:
-            if TaskManager.compare_data(username, password) == True:
+        if self.user_exists(username, password):
+            if self.compare_data(username, password):
                 print('Вы успешно вошли!')
-                TaskManager.task_manager(username,password)
+                self.task_manager(username,password)
             else:
                 print('Введите корректные данные')
-                TaskManager.main()
+                self.main()
         else:
             print('Пользователь не найден')
-            TaskManager.main()
+            self.main()
             
 
 if __name__ == "__main__":
-    manager = TaskManager(user_name="gdfskjshklg")
+    manager = TaskManager(user_name="awfawafgrg")
     manager.data_files()
     manager.data_files_tasks()
     manager.main()
