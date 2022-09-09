@@ -16,11 +16,6 @@ class TaskManager:
     def __init__(self, user_name = None):
         self.username = user_name
         self.database = ""
-        self.connect_function = """      
-        with sqlite3.connect("database/database.db") as db:
-            cur = db.cursor()
-            username_container = [username]
-            """
 
     def data_files(self):
         if not os.path.isdir("database"):
@@ -31,7 +26,11 @@ class TaskManager:
             cur = db.cursor()
 
             cur.executescript(if_not_exists)
-
+    def connect_function(self, username, password):
+                with sqlite3.connect("database/database.db") as db:
+                    cur = db.cursor()
+                    username_container = [username]
+                    user_info = [username, password]
 
     def main(self, choice=None, password=None, username=None ):
         os.system('cls')
