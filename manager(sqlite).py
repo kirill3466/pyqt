@@ -1,4 +1,3 @@
-import json
 import os
 import datetime
 import time
@@ -10,6 +9,7 @@ import uuid
 import pprint
 import sqlite3
 from database_query import if_not_exists
+from database_query import conn
 
 class TaskManager:
 
@@ -26,19 +26,14 @@ class TaskManager:
             cur = db.cursor()
 
             cur.executescript(if_not_exists)
-    def connect_function(self, username, password):
-                with sqlite3.connect("database/database.db") as db:
-                    cur = db.cursor()
-                    username_container = [username]
-                    user_info = [username, password]
 
-    def main(self, choice=None, password=None, username=None ):
+    def main(self, password=None, username=None ):
         os.system('cls')
         print("Меню")
         choice = input("1 - Вход \n2 - Регистрация \n3 - Выход \nВыберите пункт: ")
         self.return_function_for_main(choice, username, password)
 
-    def return_function_for_main(self, choice, username, password):
+    def return_function_for_main(self, choice):
         funcctions = {
             1: self.log_in(),
             2: self.sign_up(),
@@ -73,7 +68,6 @@ class TaskManager:
             #tid = str(uuid.uuid4().fields[-1])[:5]
             with sqlite3.connect("database/database.db", detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as db:
                 cur = db.cursor()
-                status_time = time.ctime()
                 status = 'ongoing'
                 content = input('Введите задачу, которую хотите добавить в список:\n ')
                 d = input('Введите дату (ГГГГ-ММ-ДД): ')
@@ -120,7 +114,6 @@ class TaskManager:
     def tasks_status(self, username, password):
             print('Задачи по статусу \n1- Просроченные задачи \n2- Задачи на сегодня \n3- Задачи на 3 дня')
             status_choice = input('Введите пункт: ')
-            message = None
             status = []
 
             with sqlite3.connect("database/database.db") as db:
@@ -239,7 +232,7 @@ class TaskManager:
             self.main()
 
         
-    def tasks_exists(self, username, password):
+    def tasks_exists(self, username):
         with sqlite3.connect("database/database.db") as db:
             cur = db.cursor()
             cur.execute('SELECT * from userstasks ')
@@ -247,7 +240,7 @@ class TaskManager:
             if username in names:
                 return True
     
-    def user_exists(self, username, password):
+    def user_exists(self, username):
         with sqlite3.connect("database/database.db") as db:
             cur = db.cursor()
             cur.execute("SELECT username FROM usersdata")
