@@ -1,0 +1,26 @@
+cursor.execute(""" CREATE TABLE users(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR,
+    password VARCHAR
+    )""")
+
+engine = create_engine("sqlite://", echo=True, future=True)
+
+with sqlite3.connect('123.db') as db:
+    cursor = db.cursor()
+
+    cursor.execute(""" CREATE TABLE articles(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        author VARCHAR,
+        topic VARCHAR,
+        content TEXT
+        )""")
+
+    values = [
+        ("Фипик", "Что будет завтра?", "Завтра все будет хорошо, не грусти"),
+        ("Летта", "Хорошая новость", "Ты самый лучший!"),
+        ("Эрвик", "Совет дня", "Не обращай внимания на негатив")
+        ]
+    cursor.executemany("INSERT INTO articles(author, topic, content) VALUES (?, ?, ?)", values)
+    cursor.execute("SELECT * FROM articles")
+    print(cursor.fetchone())

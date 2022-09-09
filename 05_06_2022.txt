@@ -1,0 +1,40 @@
+3. Если это первый запуск программы, то кроме п.1 надо проверять, есть ли что то в этих файлах.
+   Либо при инициации записывать туда структуру.
+4.         with open('datatasks.json', 'r') as file:
+            try:
+                for i in tasksdata:
+                    with open("datatasks.json") as f:
+
+   Такая конструкция избыточно. Менеджер работает один раз открывая файл или объект и все,
+   что под строкой with обрабатывает. Т.е. внутри конcтрукции ты с переменной file можешь
+   делать что угодно, второй раз открывать не надо.
+5.           try:
+                for i in tasksdata:
+                    with open("datatasks.json") as f:
+                        tasksdata = json.load(f)
+                        tasksdata["userstasks"].append(tas12:30 06.06.2022k().__dict__)
+                        with open("datatasks.json", 'w') as outfile:
+                            json.dump(tasksdata, outfile, indent=2, default=str)
+
+             except json.JSONDecodeError:
+                try:
+                    for i in tasksdata:
+                        with open("datatasks.json") as f:
+                            tasksdata = json.load(f)
+                            tasksdata["userstasks"].append(task().__dict__)
+                            with open("datatasks.json", 'w') as outfile:
+                                json.dump(tasksdata, outfile, indent=2, default=str)
+
+
+                except json.JSONDecodeError:
+                    tasksdata["userstasks"].append(task().__dict__)
+                    tasksdata = json.dumps(tasksdata, default=str)
+                    tasksdata = json.loads(str(tasksdata))
+                    with open("datatasks.json", 'w') as file:
+                        json.dump(tasksdata, file, indent=2, default=str)
+
+   Смысла этой конструкции тоже не понял.
+7. Класс Task лучше написать вне функции. Да и вообще - все функции, которые внутри
+   def taskmanager  - лучше вынести и внутри taskmanager их вызывать с нужными данными.
+
+
