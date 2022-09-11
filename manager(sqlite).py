@@ -9,22 +9,23 @@ import uuid
 import pprint
 import sqlite3
 from database_query import if_not_exists
-from database_query import conn
+from database_query import con
+from database_query import cur
+from database_query import username_container
+from database_query import user_info
+from database_query import user_input
 
 class TaskManager:
 
     def __init__(self, user_name = None):
         self.username = user_name
-        self.database = ""
 
     def data_files(self):
         if not os.path.isdir("database"):
             os.mkdir("database")
 
     def data_files_tasks(self):
-        with sqlite3.connect("database/database.db") as db:
-            cur = db.cursor()
-
+        with con as db:
             cur.executescript(if_not_exists)
 
     def main(self, password=None, username=None ):
@@ -66,8 +67,7 @@ class TaskManager:
 
     def add_task(self, username, password):
             #tid = str(uuid.uuid4().fields[-1])[:5]
-            with sqlite3.connect("database/database.db", detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as db:
-                cur = db.cursor()
+            with con as db:
                 status = 'ongoing'
                 content = input('Введите задачу, которую хотите добавить в список:\n ')
                 d = input('Введите дату (ГГГГ-ММ-ДД): ')
@@ -95,9 +95,7 @@ class TaskManager:
         
             print('Текущие задачи пользователя',username)
             
-            with sqlite3.connect("database/database.db") as db:
-                cur = db.cursor()
-                username_container = [username]
+            with con as db:
                 execute = cur.execute('SELECT * from userstasks WHERE username = ?', (username_container))
                 if self.tasks_exists(username, password):
                     for row in execute:
@@ -116,9 +114,7 @@ class TaskManager:
             status_choice = input('Введите пункт: ')
             status = []
 
-            with sqlite3.connect("database/database.db") as db:
-                cur = db.cursor()
-                username_container = [username]
+            with con as db:
                 execute = cur.execute('SELECT date from userstasks WHERE username = ?', (username_container))
                 if status_choice == '1':
                         if self.tasks_exists(username, password):
@@ -179,13 +175,10 @@ class TaskManager:
     def update_status(self, username: str, password: str):
         if self.tasks_exists(username, password):
             print('Задачи пользователя',username)
-            with sqlite3.connect("database/database.db") as db:
-                cur = db.cursor()
-                username_container = [username]
+            with con as db:
                 d = time.localtime()
                 getctime = time.strftime('%Y-%m-%d %H:%M:%S', d)
                 t = datetime.strptime(getctime, "%Y-%m-%d %H:%M:%S")
-                
                 execute = cur.execute('SELECT date from userstasks WHERE username = ?', (username_container))
                 for row in execute:
                                 cur.execute('SELECT * from userstasks WHERE username = ?', (username_container))
@@ -221,9 +214,7 @@ class TaskManager:
                 print("Пароли не совпадают!")
                 self.main()
         else:
-            with sqlite3.connect("database/database.db") as db:
-                    cur = db.cursor()
-                    user_info = [username, password]
+            with con as db:
                     if self.user_exists(username, password):
                         print("Такой пользователь уже существует")
                     else:
@@ -233,16 +224,14 @@ class TaskManager:
 
         
     def tasks_exists(self, username):
-        with sqlite3.connect("database/database.db") as db:
-            cur = db.cursor()
+        with con as db:
             cur.execute('SELECT * from userstasks ')
             names = {name[0] for name in cur.fetchall()}
             if username in names:
                 return True
     
     def user_exists(self, username):
-        with sqlite3.connect("database/database.db") as db:
-            cur = db.cursor()
+        with con as db:
             cur.execute("SELECT username FROM usersdata")
             names = {name[0] for name in cur.fetchall()}
             if username in names:
@@ -252,9 +241,7 @@ class TaskManager:
 
 
     def compare_data(self, username, password):
-        with sqlite3.connect("database/database.db") as db:
-            user_input = (username, password)
-            cur = db.cursor()
+        with con as db:
             cur.execute("SELECT username, password FROM usersdata")
             data_list = cur.fetchall()
             for i in data_list:

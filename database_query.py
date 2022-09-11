@@ -14,9 +14,8 @@ if_not_exists = '''
                                         status_time TIMESTAMP
                                         );
                                 '''
-conn = '''
-                                    with sqlite3.connect("database/database.db") as db:
-                                                        cur = db.cursor()
-                                                        username_container = [username]
-                                                        user_info = [username, password]
-'''
+con = sqlite3.connect("database/database.db")
+cur = db.cursor()
+username_container = [username]
+user_info = [username, password]
+user_input = (username, password)
