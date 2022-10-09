@@ -9,14 +9,14 @@ import pprint
 import sqlite3
 from database_query import if_not_exists
 
+
 class TaskManager:
 
     def __init__(self, user_name=None, db=None):
         self.username = user_name
         self.create_structure()
         self.con = sqlite3.connect("database/database.db")  # используем далее self.con
-        self.cur = db.cursor()
-
+        # self.cur = db.cursor()
 
     @staticmethod
     def create_structure():
@@ -39,7 +39,7 @@ class TaskManager:
         user_info = (username, password)
         return user_info
 
-     def func_user_input(self,username, password):
+    def func_user_input(self,username, password):
         user_input = (username, password)
         return user_input
 
