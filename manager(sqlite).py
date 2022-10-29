@@ -48,8 +48,7 @@ class TaskManager:
         print("Меню")
         choice = input("1 - Вход \n2 - Регистрация \n3 - Выход \nВыберите пункт: ")
         self.return_function_for_main(choice)()
-        # Функция return_function_for_main принимает только choice, а ты передаешь еще два аргумента.
-        # В других местах тоже много ошибок с передачей.
+
 
     def return_function_for_main(self, choice):
         funcctions = {
@@ -62,13 +61,13 @@ class TaskManager:
     def exitt(self):
         sys.exit()
 
-    def return_function(self, choice, username, password):
+    def return_function(self, choice):
         funcctions = {
-            1: self.all_tasks(username, password),
-            2: self.add_task(username, password),
-            3: self.tasks_status(username, password),
-            4: self.update_status(username, password),
-            5: self.main()
+            1: self.__getattribute__("all_tasks"),
+            2: self.__getattribute__("add_task"),
+            3: self.__getattribute__("tasks_status"),
+            4: self.__getattribute__("update_status"),
+            5: self.__getattribute__("main")
         }
         return funcctions.get(int(choice))
 
@@ -78,7 +77,7 @@ class TaskManager:
             "Менеджер задач \n1 - Все задачи \n2 - Добавить задачи \n3 - Задачи по статусу \n4 - Обновить статус задачи"
             " \n5 - Возврат в меню")
         choice = input('Введите пункт: ')
-        self.return_function(choice, username, password)
+        self.return_function(choice)(username, password)
         os.system('cls')
 
     def add_task(self, username, password):
