@@ -10,87 +10,74 @@ import sqlite3
 from database_query import if_not_exists
 
 
-class TaskManager:
+class SignUp:
+    def __init__(self):
+        self.con = sqlite3.connect("database/database.db")
 
-    def __init__(self, user_name=None, db=None):
-        self.username = user_name
-        self.create_structure()
-        self.con = sqlite3.connect("database/database.db")  # используем далее self.con
-        # self.cur = db.cursor()
+    def sign_up(self):
+        os.system('cls')
+        print("Введите имя и пароль для регистрации")
+        username = input("Введите имя: ")
+        password = input("Введите пароль: ")
+        password1 = input('Подтвердите пароль: ')
+        Tasks().compare_data(username, password)
+        if password != password1:
+            print("Пароли не совпадают!")
+            TaskManager().main()
+        else:
+            if self.user_exists(username):
+                print("Такой пользователь уже существует")
+            else:
+                DataBase().database_sign_up(username, password)
+                print('Регистрация прошла успешно!')
+        TaskManager().main()
 
-    @staticmethod
-    def create_structure():
-        os.makedirs('datafiles', exist_ok=True)
-        os.makedirs('database', exist_ok=True)
-
-    # def data_files(self):
-    #     if not os.path.isdir("database"):
-    #         os.mkdir("database")
-
-    def data_files_tasks(self):
+    def user_exists(self, username):
         with self.con as db:
-            db.executescript(if_not_exists)
-
-    def func_username_container(self, username):
-        username_container = [username]
-        return username_container
-
-    def func_user_info(self, username, password):
-        user_info = (username, password)
-        return user_info
-
-    def func_user_input(self, username, password):
-        user_input = (username, password)
-        return user_input
-
-    def main(self, password=None, username=None):
-        os.system('cls')
-        print("Меню")
-        choice = input("1 - Вход \n2 - Регистрация \n3 - Выход \nВыберите пункт: ")
-        self.return_function_for_main(choice)()
+            cur = db.cursor()
+            cur.execute("SELECT username FROM usersdata")
+            names = {name[0] for name in cur.fetchall()}
+            if username in names:
+                return True
+        return False
 
 
-    def return_function_for_main(self, choice):
-        funcctions = {
-            1: self.__getattribute__("log_in"),
-            2: self.__getattribute__("sign_up"),
-            3: self.__getattribute__("exitt"),
-        }
-        return funcctions.get(int(choice))
 
-    def exitt(self):
-        sys.exit()
+class DataBase:
+    def __init__(self):
+        self.con = sqlite3.connect("database/database.db")
 
-    def return_function(self, choice):
-        funcctions = {
-            1: self.__getattribute__("all_tasks"),
-            2: self.__getattribute__("add_task"),
-            3: self.__getattribute__("tasks_status"),
-            4: self.__getattribute__("update_status"),
-            5: self.__getattribute__("main")
-        }
-        return funcctions.get(int(choice))
+    def database_sign_up(self, username, password):
+        with self.con as db:
+            cur = db.cursor()
+            cur.execute('INSERT INTO usersdata(username, password) VALUES (?, ?)',
+                        Tasks().func_user_info(username, password))
 
-    def task_manager(self, username, password):
-        print('Привет, ', username)
-        print(
-            "Менеджер задач \n1 - Все задачи \n2 - Добавить задачи \n3 - Задачи по статусу \n4 - Обновить статус задачи"
-            " \n5 - Возврат в меню")
-        choice = input('Введите пункт: ')
-        self.return_function(choice)(username, password)
-        os.system('cls')
+    def database_add_task(self, username, status, content, date, steps, steps_string):
+        with self.con as db:
+            cur = db.cursor()
+            if steps == 'NULL':
+                cur.execute(
+                    'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
+                    (username, date, content, status, time.ctime()))
+            else:
+                cur.execute(
+                    'INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?,'
+                    ' ?)',
+                    (username, date, content, steps_string, status, time.ctime()))
+class Tasks:
+    def __init__(self):
+        self.con = sqlite3.connect("database/database.db")
 
     def add_task(self, username, password):
         # tid = str(uuid.uuid4().fields[-1])[:5]
-        with self.con as db:
-            cur = db.cursor()
+            option = input(
+                'Нужно ли добавить шаги ? \n<Enter>, чтобы пропустить добавление шагов \n''да'', если добавить \n')
             status = 'ongoing'
             content = input('Введите задачу, которую хотите добавить в список:\n ')
             d = input('Введите дату (ГГГГ-ММ-ДД): ')
             date = datetime.strptime(d, '%Y-%m-%d')
             steps = 'NULL'
-            option = input(
-                'Нужно ли добавить шаги ? \n<Enter>, чтобы пропустить добавление шагов \n''да'', если добавить \n')
             if len(option) > 1:
                 if option.lower() == 'да':
                     j = int(input('Введите сколько шагов нужно добавить: '))
@@ -101,16 +88,8 @@ class TaskManager:
                     steps_string = ', '.join([str(item) for item in steps])
                 elif option == 'нет' or len(option) < 1 or 'Нет':
                     steps = 'NULL'
-            if steps == 'NULL':
-                cur.execute(
-                    'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
-                    (username, date, content, status, time.ctime()))
-            else:
-                cur.execute(
-                    'INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?,'
-                    ' ?)',
-                    (username, date, content, steps_string, status, time.ctime()))
-        self.task_manager(username, password)
+            DataBase().database_add_task(username, password, status, content, date, steps)
+            TaskManager().task_manager(username, password)
 
     def all_tasks(self, username, password):
 
@@ -124,7 +103,7 @@ class TaskManager:
                     print(row)
             else:
                 print("У пользователя нет никаких задач!")
-        self.task_manager(username, password)
+        TaskManager().task_manager(username, password)
 
     def tasks_status(self, username, password):
         print('Задачи по статусу \n1- Просроченные задачи \n2- Задачи на сегодня \n3- Задачи на 3 дня')
@@ -153,7 +132,7 @@ class TaskManager:
                     pprint.pprint(status)
                 else:
                     print('Просроченных задач не нашлось!')
-                self.task_manager(username, password)
+                TaskManager().task_manager(username, password)
             elif status_choice == '2':
                 if self.compare_data(username, password):
                     for row in execute:
@@ -172,7 +151,7 @@ class TaskManager:
                     pprint.pprint(status)
                 else:
                     print('Задач на сегодня не нашлось!')
-                self.task_manager(username, password)
+                TaskManager().task_manager(username, password)
 
             elif status_choice == '3':
                 if self.compare_data(username, password):
@@ -192,7 +171,7 @@ class TaskManager:
                     pprint.pprint(status)
                 else:
                     print('Задач на ближайшие 3 дня не нашлось!')
-                self.task_manager(username, password)
+                TaskManager().task_manager(username, password)
 
     def update_status(self, username: str, password: str):
         if self.tasks_exists(username):
@@ -224,32 +203,11 @@ class TaskManager:
                                 update_variables)
                 else:
                     print('Введите завершено или отменено!')
-                self.task_manager(username, password)
+                TaskManager().task_manager(username, password)
         else:
             print('У пользователя нет задач')
-            self.task_manager(username, password)
-        self.task_manager(username, password)
-
-    def sign_up(self):
-        os.system('cls')
-        print("Введите имя и пароль для регистрации")
-        username = input("Введите имя: ")
-        password = input("Введите пароль: ")
-        password1 = input('Подтвердите пароль: ')
-        self.compare_data(username, password)
-        if password != password1:
-            print("Пароли не совпадают!")
-            self.main()
-        else:
-            with self.con as db:
-                cur = db.cursor()
-                if self.user_exists(username):
-                    print("Такой пользователь уже существует")
-                else:
-                    cur.execute('INSERT INTO usersdata(username, password) VALUES (?, ?)',
-                                self.func_user_info(username, password))
-                    print('Регистрация прошла успешно!')
-            self.main()
+            TaskManager().task_manager(username, password)
+        TaskManager().task_manager(username, password)
 
     def tasks_exists(self, username):
         with self.con as db:
@@ -260,14 +218,17 @@ class TaskManager:
                 return True
         return False
 
-    def user_exists(self, username):
-        with self.con as db:
-            cur = db.cursor()
-            cur.execute("SELECT username FROM usersdata")
-            names = {name[0] for name in cur.fetchall()}
-            if username in names:
-                return True
-        return False
+    def func_username_container(self, username):
+        username_container = [username]
+        return username_container
+
+    def func_user_info(self, username, password):
+        user_info = (username, password)
+        return user_info
+
+    def func_user_input(self, username, password):
+        user_input = (username, password)
+        return user_input
 
     def compare_data(self, username, password):
         with self.con as db:
@@ -279,13 +240,73 @@ class TaskManager:
                     return True
         return False
 
+    def return_function(self, choice):
+        funcctions = {
+            1: self.__getattribute__("all_tasks"),
+            2: self.__getattribute__("add_task"),
+            3: self.__getattribute__("tasks_status"),
+            4: self.__getattribute__("update_status"),
+            5: TaskManager().__getattribute__("main")
+        }
+        return funcctions.get(int(choice))
+
+
+class TaskManager:
+
+    def __init__(self, user_name=None, db=None):
+        self.username = user_name
+        self.create_structure()
+        self.con = sqlite3.connect("database/database.db")  # используем далее self.con
+        # self.cur = db.cursor()
+
+    @staticmethod
+    def create_structure():
+        os.makedirs('datafiles', exist_ok=True)
+        os.makedirs('database', exist_ok=True)
+
+    # def data_files(self):
+    #     if not os.path.isdir("database"):
+    #         os.mkdir("database")
+
+    def data_files_tasks(self):
+        with self.con as db:
+            db.executescript(if_not_exists)
+
+    def main(self, password=None, username=None):
+        os.system('cls')
+        print("Меню")
+        choice = input("1 - Вход \n2 - Регистрация \n3 - Выход \nВыберите пункт: ")
+        self.return_function_for_main(choice)()
+
+    def return_function_for_main(self, choice):
+        funcctions = {
+            1: self.__getattribute__("log_in"),
+            2: SignUp().__getattribute__("sign_up"),
+            3: self.__getattribute__("exitt"),
+        }
+        return funcctions.get(int(choice))
+
+    def exitt(self):
+        sys.exit()
+
+
+    def task_manager(self, username, password):
+        print('Привет, ', username)
+        print(
+            "Менеджер задач \n1 - Все задачи \n2 - Добавить задачи \n3 - Задачи по статусу \n4 - Обновить статус задачи"
+            " \n5 - Возврат в меню")
+        choice = input('Введите пункт: ')
+        Tasks().return_function(choice)(username, password)
+        os.system('cls')
+
+
     def log_in(self):
         os.system('cls')
         print('Введите данные для входа')
         username = input('Имя: ')
         password = input('Пароль: ')
-        if self.user_exists(username):
-            if self.compare_data(username, password):
+        if SignUp().user_exists(username):
+            if Tasks().compare_data(username, password):
                 print('Вы успешно вошли!')
                 self.task_manager(username, password)
             else:
