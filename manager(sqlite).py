@@ -42,7 +42,6 @@ class SignUp:
         return False
 
 
-
 class DataBase:
     def __init__(self):
         self.con = sqlite3.connect("database/database.db")
@@ -53,31 +52,16 @@ class DataBase:
             cur.execute('INSERT INTO usersdata(username, password) VALUES (?, ?)',
                         Tasks().func_user_info(username, password))
 
-    def database_add_task(self, username, status, content, date, steps, steps_string):
+    def database_add_task(self, username):
         with self.con as db:
-            cur = db.cursor()
-            if steps == 'NULL':
-                cur.execute(
-                    'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
-                    (username, date, content, status, time.ctime()))
-            else:
-                cur.execute(
-                    'INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?,'
-                    ' ?)',
-                    (username, date, content, steps_string, status, time.ctime()))
-class Tasks:
-    def __init__(self):
-        self.con = sqlite3.connect("database/database.db")
-
-    def add_task(self, username, password):
-        # tid = str(uuid.uuid4().fields[-1])[:5]
-            option = input(
-                'Нужно ли добавить шаги ? \n<Enter>, чтобы пропустить добавление шагов \n''да'', если добавить \n')
             status = 'ongoing'
             content = input('Введите задачу, которую хотите добавить в список:\n ')
             d = input('Введите дату (ГГГГ-ММ-ДД): ')
             date = datetime.strptime(d, '%Y-%m-%d')
             steps = 'NULL'
+            cur = db.cursor()
+            option = input(
+                'Нужно ли добавить шаги ? \n<Enter>, чтобы пропустить добавление шагов \n''да'', если добавить \n')
             if len(option) > 1:
                 if option.lower() == 'да':
                     j = int(input('Введите сколько шагов нужно добавить: '))
@@ -88,37 +72,38 @@ class Tasks:
                     steps_string = ', '.join([str(item) for item in steps])
                 elif option == 'нет' or len(option) < 1 or 'Нет':
                     steps = 'NULL'
-            DataBase().database_add_task(username, password, status, content, date, steps)
-            TaskManager().task_manager(username, password)
+            if steps == 'NULL':
+                cur.execute(
+                    'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
+                    (username, date, content, status, time.ctime()))
+            else:
+                cur.execute(
+                    'INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?,'
+                    ' ?)',
+                    (username, date, content, steps_string, status, time.ctime()))
 
-    def all_tasks(self, username, password):
-
-        print('Текущие задачи пользователя', username)
+    def database_all_tasks(self, username, execute):
         with self.con as db:
             cur = db.cursor()
             execute = cur.execute('SELECT * from userstasks WHERE username = ?',
-                                  (self.func_username_container(username)))
-            if self.tasks_exists(username):
+                                  (Tasks().func_username_container(username)))
+            if Tasks().tasks_exists(username):
                 for row in execute:
                     print(row)
             else:
                 print("У пользователя нет никаких задач!")
-        TaskManager().task_manager(username, password)
 
-    def tasks_status(self, username, password):
-        print('Задачи по статусу \n1- Просроченные задачи \n2- Задачи на сегодня \n3- Задачи на 3 дня')
-        status_choice = input('Введите пункт: ')
+    def database_task_status(self, username, status_choice, password):
         status = []
-
         with self.con as db:
             cur = db.cursor()
             execute = cur.execute('SELECT date from userstasks WHERE username = ?',
-                                  (self.func_username_container(username)))
+                                  (Tasks().func_username_container(username)))
             if status_choice == '1':
-                if self.tasks_exists(username):
+                if Tasks().tasks_exists(username):
                     for row in execute:
                         cur.execute('SELECT * from userstasks WHERE username = ? ',
-                                    (self.func_username_container(username)))
+                                    (Tasks().func_username_container(username)))
                         task_date = cur.fetchall()
                         for i in task_date:
                             d = time.localtime()
@@ -134,10 +119,10 @@ class Tasks:
                     print('Просроченных задач не нашлось!')
                 TaskManager().task_manager(username, password)
             elif status_choice == '2':
-                if self.compare_data(username, password):
+                if Tasks().compare_data(username, password):
                     for row in execute:
                         cur.execute('SELECT * from userstasks WHERE username = ?',
-                                    (self.func_username_container(username)))
+                                    (Tasks().func_username_container(username)))
                         task_date = cur.fetchall()
                         for i in task_date:
                             d = time.localtime()
@@ -154,10 +139,10 @@ class Tasks:
                 TaskManager().task_manager(username, password)
 
             elif status_choice == '3':
-                if self.compare_data(username, password):
+                if Tasks().compare_data(username, password):
                     for row in execute:
                         cur.execute('SELECT * from userstasks WHERE username = ?',
-                                    (self.func_username_container(username)))
+                                    (Tasks().func_username_container(username)))
                         task_date = cur.fetchall()
                         for i in task_date:
                             d = time.localtime()
@@ -173,49 +158,85 @@ class Tasks:
                     print('Задач на ближайшие 3 дня не нашлось!')
                 TaskManager().task_manager(username, password)
 
-    def update_status(self, username: str, password: str):
-        if self.tasks_exists(username):
-            print('Задачи пользователя', username)
-            with self.con as db:
-                cur = db.cursor()
-                d = time.localtime()
-                getctime = time.strftime('%Y-%m-%d %H:%M:%S', d)
-                t = datetime.strptime(getctime, "%Y-%m-%d %H:%M:%S")
-                execute = cur.execute('SELECT date from userstasks WHERE username = ?',
-                                      (self.func_username_container(username)))
-                for row in execute:
-                    cur.execute('SELECT * from userstasks WHERE username = ?',
-                                (self.func_username_container(username)))
-                    task_date = cur.fetchall()
-                    for row, count in enumerate(task_date, start=1):
-                        print("|", row, "|", 'Задача:', count[3], '| Статус: ', count[5], '|')
-                choice = int(input('Выберите номер задачи, который желаете изменить\n'))
-                print('Вы выбрали задачу № ', choice)
-                choice2 = (input('Изменить на завершено, или отменено?\n'))
+    def database_update_status(self, username, password):
+        with self.con as db:
+            cur = db.cursor()
+            d = time.localtime()
+            getctime = time.strftime('%Y-%m-%d %H:%M:%S', d)
+            t = datetime.strptime(getctime, "%Y-%m-%d %H:%M:%S")
+            execute = cur.execute('SELECT date from userstasks WHERE username = ?',
+                                  (Tasks().func_username_container(username)))
+            for row in execute:
+                cur.execute('SELECT * from userstasks WHERE username = ?',
+                            (Tasks().func_username_container(username)))
+                task_date = cur.fetchall()
+                for row, count in enumerate(task_date, start=1):
+                    print("|", row, "|", 'Задача:', count[3], '| Статус: ', count[5], '|')
+            choice = int(input('Выберите номер задачи, который желаете изменить\n'))
+            print('Вы выбрали задачу № ', choice)
+            choice2 = (input('Изменить на завершено, или отменено?\n'))
 
-                if choice2.lower() == 'завершено':
-                    update_variables = 'completed', username, choice
-                    cur.execute('UPDATE userstasks SET status = ? WHERE username = ? AND tid = ?',
-                                update_variables)
-                elif choice2.lower() == 'отменено':
-                    update_variables = 'cancelled', username, choice
-                    cur.execute('UPDATE userstasks SET status = ? WHERE username = ? AND tid = ?',
-                                update_variables)
-                else:
-                    print('Введите завершено или отменено!')
-                TaskManager().task_manager(username, password)
-        else:
-            print('У пользователя нет задач')
+            if choice2.lower() == 'завершено':
+                update_variables = 'completed', username, choice
+                cur.execute('UPDATE userstasks SET status = ? WHERE username = ? AND tid = ?',
+                            update_variables)
+            elif choice2.lower() == 'отменено':
+                update_variables = 'cancelled', username, choice
+                cur.execute('UPDATE userstasks SET status = ? WHERE username = ? AND tid = ?',
+                            update_variables)
+            else:
+                print('Введите завершено или отменено!')
             TaskManager().task_manager(username, password)
-        TaskManager().task_manager(username, password)
 
-    def tasks_exists(self, username):
+    def database_task_exists(self, username):
         with self.con as db:
             cur = db.cursor()
             cur.execute('SELECT * from userstasks ')
             names = {name[0] for name in cur.fetchall()}
             if username in names:
                 return True
+
+    def database_compare_data(self, username, password):
+        with self.con as db:
+            cur = db.cursor()
+            cur.execute("SELECT username, password FROM usersdata")
+            data_list = cur.fetchall()
+            for i in data_list:
+                if Tasks().func_user_input(username, password) == i:
+                    return True
+        return False
+
+
+class Tasks:
+    def __init__(self):
+        self.con = sqlite3.connect("database/database.db")
+
+    def add_task(self, username, password):
+        # tid = str(uuid.uuid4().fields[-1])[:5]
+        DataBase().database_add_task(username)
+        TaskManager().task_manager(username, password)
+
+    def all_tasks(self, username, password):
+        print('Текущие задачи пользователя', username)
+        DataBase().database_all_tasks(username, password)
+        TaskManager().task_manager(username, password)
+
+    def tasks_status(self, username, password):
+        print('Задачи по статусу \n1- Просроченные задачи \n2- Задачи на сегодня \n3- Задачи на 3 дня')
+        status_choice = input('Введите пункт: ')
+        DataBase().database_task_status(username, password, status_choice)
+
+    def update_status(self, username: str, password: str):
+        if self.tasks_exists(username):
+            print('Задачи пользователя', username)
+            DataBase().database_update_status(username, password)
+        else:
+            print('У пользователя нет задач')
+            TaskManager().task_manager(username, password)
+        TaskManager().task_manager(username, password)
+
+    def tasks_exists(self, username):
+        DataBase().database_task_exists(username)
         return False
 
     def func_username_container(self, username):
@@ -231,14 +252,7 @@ class Tasks:
         return user_input
 
     def compare_data(self, username, password):
-        with self.con as db:
-            cur = db.cursor()
-            cur.execute("SELECT username, password FROM usersdata")
-            data_list = cur.fetchall()
-            for i in data_list:
-                if self.func_user_input(username, password) == i:
-                    return True
-        return False
+        DataBase().database_compare_data(username, password)
 
     def return_function(self, choice):
         funcctions = {
