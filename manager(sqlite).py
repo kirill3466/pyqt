@@ -87,8 +87,7 @@ class LogInWindow(QWidget):
         else:
             if SignUp().user_exists(username):
                 if Tasks().compare_data(username, password):
-                    print("Successfully logged in.")
-                    self.errorLabel.setText("")
+                    self.errorLabel.setText("Successfully logged in.")
                     self.go_to_task_manager()
                 else:
                     self.errorLabel.setText("Invalid username or password")
