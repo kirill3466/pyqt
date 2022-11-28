@@ -8,7 +8,137 @@ import os.path
 import pprint
 import sqlite3
 from database_query import if_not_exists
+from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtWidgets import QDialog, QApplication, QWidget, QMainWindow, QVBoxLayout
 
+
+class MainWindow(QWidget):
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__(parent)
+        self.SignUpButton = QtWidgets.QPushButton("Sign up")
+        self.LogInButton = QtWidgets.QPushButton("Log in")
+        self.initUI()
+
+    def initUI(self):
+        layout = QtWidgets.QGridLayout()
+        self.SignUpButton.setFixedSize(150, 25)
+        self.LogInButton.setFixedSize(150, 25)
+        layout.addWidget(self.SignUpButton)
+        layout.addWidget(self.LogInButton)
+        self.SignUpButton.clicked.connect(self.go_to_signup)
+        self.LogInButton.clicked.connect(self.go_to_login)
+        self.setLayout(layout)
+
+    def go_to_login(self):
+        window2 = LogInWindow()
+        widget.addWidget(window2)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+
+    def go_to_signup(self):
+        window3 = SignUpWindow()
+        widget.addWidget(window3)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+class LogInWindow(QWidget):
+    def __init__(self):
+        super(LogInWindow, self).__init__()
+        self.usernameLabel = QtWidgets.QLabel("Username")
+        self.passwordLabel = QtWidgets.QLabel("Password")
+        self.backButton = QtWidgets.QPushButton('Back')
+        self.loginButton = QtWidgets.QPushButton('Log in')
+        self.errorLabel = QtWidgets.QLabel('The email or password is incorrect.')
+        self.usernameLine = QtWidgets.QLineEdit()
+        self.passwordLine = QtWidgets.QLineEdit()
+        self.backButton.clicked.connect(self.go_back)
+        self.errorLabel.setStyleSheet("color : 'red'")
+        self.passwordLine.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.loginButton.clicked.connect(self.login_function)
+        self.initUI()
+
+    def initUI(self):
+        layout = QtWidgets.QGridLayout()
+        layout.setAlignment(QtCore.Qt.AlignCenter)
+        #buttonLayout.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignBottom)
+        self.passwordLine.setFixedSize(200, 25)
+        self.usernameLine.setFixedSize(200, 25)
+        layout.addWidget(self.usernameLabel)
+        layout.addWidget(self.usernameLine)
+        layout.addWidget(self.passwordLabel)
+        layout.addWidget(self.passwordLine)
+        layout.addWidget(self.errorLabel)
+        layout.addWidget(self.loginButton)
+        layout.addWidget(self.backButton)
+        self.errorLabel.hide()
+        self.setLayout(layout)
+
+    def go_back(self):
+        os.system('cls')
+        widget.setCurrentIndex(widget.currentIndex() - 1)
+
+    def login_function(self):
+        username = self.usernameLine.text()
+        password = self.passwordLine.text()
+        print(username)
+        print(password)
+        if len(username) == 0 or len(password) == 0:
+            self.errorLabel.setText("Please input all fields.")
+            self.errorLabel.show()
+        else:
+            if SignUp().user_exists(username):
+                if Tasks().compare_data(username, password):
+                    print("Successfully logged in.")
+                    self.errorLabel.setText("")
+                    self.go_to_task_manager()
+                else:
+                    self.errorLabel.setText("Invalid username or password")
+                    self.errorLabel.show()
+            else:
+                self.errorLabel.setText("User not found")
+                self.errorLabel.show()
+
+    def go_to_task_manager(self):
+        pass
+
+class SignUpWindow(QWidget):
+    def __init__(self):
+        super(SignUpWindow, self).__init__()
+        self.usernameLabel = QtWidgets.QLabel("Username")
+        self.passwordLabel = QtWidgets.QLabel("Password")
+        self.passwordLabel2 = QtWidgets.QLabel("Confirm password")
+        self.backButton = QtWidgets.QPushButton('Back')
+        self.loginButton = QtWidgets.QPushButton('Log in')
+        self.usernameLine = QtWidgets.QLineEdit()
+        self.passwordLine = QtWidgets.QLineEdit()
+        self.passwordLine2 = QtWidgets.QLineEdit()
+        self.errorLabel = QtWidgets.QLabel('ERROR')
+        self.errorLabel.setStyleSheet("color : 'red'")
+        self.backButton.clicked.connect(self.go_back)
+        self.initUI()
+
+    def initUI(self):
+        layout = QtWidgets.QGridLayout()
+        layout.setAlignment(QtCore.Qt.AlignCenter)
+        self.passwordLine.setFixedSize(200, 25)
+        self.passwordLine2.setFixedSize(200, 25)
+        self.usernameLine.setFixedSize(200, 25)
+        layout.maximumSize()
+        layout.addWidget(self.usernameLabel)
+        layout.addWidget(self.usernameLine)
+        layout.addWidget(self.passwordLabel)
+        layout.addWidget(self.passwordLine)
+        layout.addWidget(self.passwordLine2)
+        layout.addWidget(self.errorLabel)
+        layout.addWidget(self.loginButton)
+        layout.addWidget(self.backButton)
+        self.errorLabel.hide()
+        self.setLayout(layout)
+
+    def go_back(self):
+        widget.setCurrentIndex(widget.currentIndex() - 1)
+
+class TaskManagerUI(QWidget):
+    pass
 
 class SignUp:
     def __init__(self):
@@ -303,7 +433,6 @@ class TaskManager:
     def exitt(self):
         sys.exit()
 
-
     def task_manager(self, username, password):
         print('Привет, ', username)
         print(
@@ -312,7 +441,6 @@ class TaskManager:
         choice = input('Введите пункт: ')
         Tasks().return_function(choice)(username, password)
         os.system('cls')
-
 
     def log_in(self):
         os.system('cls')
@@ -332,7 +460,15 @@ class TaskManager:
 
 
 if __name__ == "__main__":
-    manager = TaskManager(user_name="awfawafgrg")
+    # manager = TaskManager(user_name="awfawafgrg")
     # manager.data_files()
-    manager.data_files_tasks()
-    manager.main()
+    # manager.data_files_tasks()
+    # manager.main()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    widget = QtWidgets.QStackedWidget()
+    widget.addWidget(window)
+    widget.setWindowTitle("Task manager")
+    widget.setFixedSize(400, 300)
+    widget.show()
+    sys.exit(app.exec_())
