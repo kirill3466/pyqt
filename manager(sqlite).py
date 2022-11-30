@@ -79,14 +79,13 @@ class LogInWindow(QWidget):
     def login_function(self):
         username = self.usernameLine.text()
         password = self.passwordLine.text()
-        print(username)
-        print(password)
         if len(username) == 0 or len(password) == 0:
             self.errorLabel.setText("Please input all fields.")
             self.errorLabel.show()
         else:
             if SignUp().user_exists(username):
                 if Tasks().compare_data(username, password):
+                    print("func works") #Tasks().compare_data(username, password) doesnt work
                     self.errorLabel.setText("Successfully logged in.")
                     self.go_to_task_manager()
                 else:
@@ -352,7 +351,9 @@ class DataBase:
             cur.execute("SELECT username, password FROM usersdata")
             data_list = cur.fetchall()
             for i in data_list:
-                if Tasks().func_user_input(username, password) == i:
+                print(i[0], i[1])
+                print(username, password)
+                if Tasks().func_user_input(username, password) == (i[0], i[1]):
                     return True
         return False
 
