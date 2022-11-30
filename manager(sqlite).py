@@ -87,6 +87,8 @@ class LogInWindow(QWidget):
                 if Tasks().compare_data(username, password):
                     print("func works") #Tasks().compare_data(username, password) doesnt work
                     self.errorLabel.setText("Successfully logged in.")
+                    self.errorLabel.setStyleSheet("color : 'green'")
+                    self.errorLabel.show()
                     self.go_to_task_manager()
                 else:
                     self.errorLabel.setText("Invalid username or password")
@@ -153,6 +155,7 @@ class SignUpWindow(QWidget):
             else:
                 DataBase().database_sign_up(username, password)
                 self.errorLabel.setText('Succesfully signed up!')
+                self.errorLabel.setStyleSheet("color : 'green'")
                 self.errorLabel.show()
         LogInWindow().go_to_task_manager()
 
@@ -351,8 +354,7 @@ class DataBase:
             cur.execute("SELECT username, password FROM usersdata")
             data_list = cur.fetchall()
             for i in data_list:
-                print(i[0], i[1])
-                print(username, password)
+                Tasks().func_user_input(username, password)
                 if Tasks().func_user_input(username, password) == (i[0], i[1]):
                     return True
         return False
