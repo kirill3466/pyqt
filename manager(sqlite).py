@@ -106,13 +106,14 @@ class SignUpWindow(QWidget):
         self.passwordLabel = QtWidgets.QLabel("Password")
         self.passwordLabel2 = QtWidgets.QLabel("Confirm password")
         self.backButton = QtWidgets.QPushButton('Back')
-        self.loginButton = QtWidgets.QPushButton('Log in')
+        self.createButton = QtWidgets.QPushButton('Create user')
         self.usernameLine = QtWidgets.QLineEdit()
         self.passwordLine = QtWidgets.QLineEdit()
         self.passwordLine2 = QtWidgets.QLineEdit()
         self.errorLabel = QtWidgets.QLabel('ERROR')
         self.errorLabel.setStyleSheet("color : 'red'")
         self.backButton.clicked.connect(self.go_back)
+        self.createButton.clicked.connect(self.create_func)
         self.initUI()
 
     def initUI(self):
@@ -126,15 +127,35 @@ class SignUpWindow(QWidget):
         layout.addWidget(self.usernameLine)
         layout.addWidget(self.passwordLabel)
         layout.addWidget(self.passwordLine)
+        layout.addWidget(self.passwordLabel2)
         layout.addWidget(self.passwordLine2)
         layout.addWidget(self.errorLabel)
-        layout.addWidget(self.loginButton)
+        layout.addWidget(self.createButton)
         layout.addWidget(self.backButton)
         self.errorLabel.hide()
         self.setLayout(layout)
 
     def go_back(self):
         widget.setCurrentIndex(widget.currentIndex() - 1)
+
+    def create_func(self):
+        username = self.usernameLine.text()
+        password = self.passwordLine.text()
+        password1 = self.passwordLine2.text()
+        Tasks().compare_data(username, password)
+        if password != password1:
+            self.errorLabel.setText("Passwords are not matching")
+            self.errorLabel.show()
+            LogInWindow().go_to_task_manager()
+        else:
+            if SignUp().user_exists(username):
+                self.errorLabel.setText("User already exists")
+                self.errorLabel.show()
+            else:
+                DataBase().database_sign_up(username, password)
+                self.errorLabel.setText('Succesfully signed up!')
+                self.errorLabel.show()
+        LogInWindow().go_to_task_manager()
 
 class TaskManagerUI(QWidget):
     pass
@@ -469,17 +490,17 @@ if __name__ == "__main__":
             background: #262D37;
         }
         QLabel{
-            color: #fff;
+            color: #D3D3D3;
         }
         QLineEdit{
-            border: 2px solid #fff;
+            border: 2px solid #D3D3D3;
             border-radius: 8px;
             padding: 1px;
-            color: #fff;
+            color: #D3D3D3;
         }
         QPushButton{
             color: #D3D3D3;
-            background: #0577a8;
+            background: #808080;
             border: 1px #DADADA solid;
             padding: 5px 10px;
             border-radius: 2px;
