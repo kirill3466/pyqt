@@ -464,6 +464,32 @@ if __name__ == "__main__":
     # manager.data_files_tasks()
     # manager.main()
     app = QApplication(sys.argv)
+    style = """
+        QWidget{
+            background: #262D37;
+        }
+        QLabel{
+            color: #fff;
+        }
+        QLineEdit{
+            border: 2px solid #fff;
+            border-radius: 8px;
+            padding: 1px;
+            color: #fff;
+        }
+        QPushButton{
+            color: #D3D3D3;
+            background: #0577a8;
+            border: 1px #DADADA solid;
+            padding: 5px 10px;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 9pt;
+            outline: none
+        }
+        
+    """
+    app.setStyleSheet(style)
     window = MainWindow()
     widget = QtWidgets.QStackedWidget()
     widget.addWidget(window)
