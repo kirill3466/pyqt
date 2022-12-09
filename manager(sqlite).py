@@ -271,7 +271,8 @@ class DialogWindow(QWidget):
         self.setLayout(layout)
 
         self.temp = self.date_edit.date()
-        date.append(self.temp.toPyDate())
+        date.append(self.temp)
+
         content.append(self.user_input.text())
 
         self.add_button.clicked.connect(self.all_task_data_received())
@@ -285,8 +286,6 @@ class DialogWindow(QWidget):
         self.ask.show()
 
     def all_task_data_received(self):
-        steps = ''
-        print(date, content)
         self.add_button.clicked.connect(DataBase().database_add_task())
 
 
@@ -370,7 +369,9 @@ class DataBase:
             #d = input('Введите дату (ГГГГ-ММ-ДД): ')
             #date = datetime.strptime(d, '%Y-%m-%d')
             cur = db.cursor()
-            print(username, date, content, status, status_time)
+            status_time = time.ctime()
+            d = date[0].toPyDate()
+            print(username, d, content[0], status, status_time)
             """if steps == '':
                 cur.execute(
                     'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
