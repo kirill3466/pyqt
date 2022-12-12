@@ -1,4 +1,3 @@
-import calendar
 import os
 import datetime
 import time
@@ -9,7 +8,7 @@ import os.path
 import pprint
 import sqlite3
 from database_query import if_not_exists
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction
 
 
@@ -273,9 +272,7 @@ class DialogWindow(QWidget):
         self.temp = self.date_edit.date()
         date.append(self.temp)
 
-        content.append(self.user_input.text())
-
-        self.add_button.clicked.connect(self.all_task_data_received())
+        self.add_button.clicked.connect(self.add_func)
 
     def checked(self):
         if self.check_box.isChecked():
@@ -285,9 +282,10 @@ class DialogWindow(QWidget):
         self.ask = AskUser()
         self.ask.show()
 
-    def all_task_data_received(self):
-        self.add_button.clicked.connect(DataBase().database_add_task())
-
+    def add_func(self):
+        self.text = self.user_input.text()
+        content_session.append(self.text)
+        DataBase().database_add_task()
 
 class AskUser(QWidget):
     def __init__(self):
@@ -330,12 +328,28 @@ class AskUser(QWidget):
         if n_items > new_count:
             self.items = self.items[:-1]
 
+        self.accept_btn.clicked.connect(self.accept_func)
+
+
+
+    def accept_func(self):
         steps = []
         for i in self.items:
             steps.append(i.text())
-        print(steps)
+        self.steps_str = ''
+        for i in steps:
+            self.steps_str = ', '.join([str(item) for item in steps])
+        steps_session.append(self.steps_str)
+        print('iz func', steps_session[0])
 
-        self.accept_btn.clicked.connect()
+    """def accept_func(self):
+            steps = []
+            for i in self.items:
+                steps.append(i.text())
+            self.steps_str = ''
+            for i in steps:
+                self.steps_str = self.steps_str + " " + i + ','
+            steps_session.append(self.steps_str)"""
 
 
 class SignUp:
@@ -364,6 +378,7 @@ class DataBase:
 
     def database_add_task(self):
         username = username_session[0]
+        content = content_session[0]
         with self.con as db:
             status = 'ongoing'
             #d = input('Введите дату (ГГГГ-ММ-ДД): ')
@@ -371,16 +386,21 @@ class DataBase:
             cur = db.cursor()
             status_time = time.ctime()
             d = date[0].toPyDate()
-            print(username, d, content[0], status, status_time)
-            """if steps == '':
+            #for i in steps_session:
+                #if not i:
+                    #steps_session.remove(i)
+            #steps = "ddd"
+            print('iz db', steps_session[0])
+            steps = steps_session[0]
+            if steps_session:
                 cur.execute(
                     'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
-                    (username, date, content, status, time.ctime()))
+                    (username, d, content, status, time.ctime()))
             else:
                 cur.execute(
                     'INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?,'
                     ' ?)',
-                    (username, date, content, steps, status, time.ctime()))"""
+                    (username, d, content, steps_session[0], status, time.ctime()))
 
     def database_all_tasks(self, username):
         with self.con as db:
@@ -626,9 +646,9 @@ if __name__ == "__main__":
     """
     username_session = []
     password_session = []
-    content = []
+    content_session = []
     date = []
-    steps = []
+    steps_session = []
     app.setStyleSheet(style)
     MW = MainWindow()
     MW.setWindowTitle("Task manager")
