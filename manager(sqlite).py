@@ -3,6 +3,7 @@ import datetime
 import time
 import sys
 from datetime import datetime
+from datetime import timedelta
 import os.path
 import sqlite3
 from database_query import if_not_exists
@@ -217,7 +218,7 @@ class TaskManagerUI(QMainWindow):
         table_headers = [self.overdue_table_header, self.three_days_table_header, self.today_table_header,
                          self.all_tasks_table_header]
 
-        choice_tables = [self.overdue_table, self.three_days_table, self.today_table]
+        #choice_tables = [self.overdue_table, self.three_days_table, self.today_table]
 
         for i in tables:
             i.setRowCount(res[-1][0])
@@ -258,6 +259,8 @@ class TaskManagerUI(QMainWindow):
         self.usernameLine = QtWidgets.QLineEdit()
         self.passwordLine = QtWidgets.QLineEdit()
 
+
+
         self.overdue_table.clicked.connect(self.overdue_tasks)
         self.three_days_table.clicked.connect(self.three_days_tasks)
         self.today_table.clicked.connect(self.today_tasks)
@@ -285,8 +288,28 @@ class TaskManagerUI(QMainWindow):
         self.dialog.show()
 
     def overdue_tasks(self):
+        username = username_session[0]
         display = self.tab_1
         self.load_data(display)
+        status = []
+        """with self.con as db:
+            cur = db.cursor()
+            execute = cur.execute('SELECT date from userstasks WHERE username = ?',
+                                  (Tasks().func_username_container(username)))
+            if Tasks().tasks_exists(username):
+                for row in execute:
+                    cur.execute('SELECT * from userstasks WHERE username = ? ',
+                                (Tasks().func_username_container(username)))
+                    task_date = cur.fetchall()
+                    for i in task_date:
+                        d = time.localtime()
+                        getctime = time.strftime('%Y-%m-%d %H:%M:%S', d)
+                        t1 = datetime.strptime(i[2], "%Y-%m-%d %H:%M:%S")
+                        t2 = datetime.strptime(getctime, "%Y-%m-%d %H:%M:%S")
+                        time_diff = abs(t1 - t2)
+                        if time_diff > timedelta(days=3):
+                            status.append(i)"""
+
 
     def three_days_tasks(self):
         display = self.tab_2
@@ -296,7 +319,6 @@ class TaskManagerUI(QMainWindow):
         display = self.tab_3
         self.load_data(display)
 
-
     def tasks_status(self):
         self.setCentralWidget(self.tabs)
         self.centralWidget().show()
@@ -305,29 +327,7 @@ class TaskManagerUI(QMainWindow):
         pass
 
     """def database_task_status(self, username, status_choice, password):
-        status = []
-        with self.con as db:
-            cur = db.cursor()
-            execute = cur.execute('SELECT date from userstasks WHERE username = ?',
-                                  (Tasks().func_username_container(username)))
-            if status_choice == '1':
-                if Tasks().tasks_exists(username):
-                    for row in execute:
-                        cur.execute('SELECT * from userstasks WHERE username = ? ',
-                                    (Tasks().func_username_container(username)))
-                        task_date = cur.fetchall()
-                        for i in task_date:
-                            d = time.localtime()
-                            getctime = time.strftime('%Y-%m-%d %H:%M:%S', d)
-                            t1 = datetime.strptime(i[2], "%Y-%m-%d %H:%M:%S")
-                            t2 = datetime.strptime(getctime, "%Y-%m-%d %H:%M:%S")
-                            time_diff = abs(t1 - t2)
-                            if time_diff > timedelta(days=3):
-                                status.append(i)
-                if status:
-                    pprint.pprint(status)
-                else:
-                    print('Просроченных задач не нашлось!')
+        
                 TaskManager().task_manager(username, password)
             elif status_choice == '2':
                 if Tasks().compare_data(username, password):
