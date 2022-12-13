@@ -9,6 +9,7 @@ import sqlite3
 from database_query import if_not_exists
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, QHeaderView
+from PyQt5.QtCore import QSortFilterProxyModel
 
 
 class MainWindow(QWidget):
@@ -259,8 +260,6 @@ class TaskManagerUI(QMainWindow):
         self.usernameLine = QtWidgets.QLineEdit()
         self.passwordLine = QtWidgets.QLineEdit()
 
-
-
         self.overdue_table.clicked.connect(self.overdue_tasks)
         self.three_days_table.clicked.connect(self.three_days_tasks)
         self.today_table.clicked.connect(self.today_tasks)
@@ -368,7 +367,6 @@ class TaskManagerUI(QMainWindow):
                 else:
                     print('Задач на ближайшие 3 дня не нашлось!')
                 TaskManager().task_manager(username, password)"""
-
 
 # dialog window for task status
 class StatusDialog(QWidget):
