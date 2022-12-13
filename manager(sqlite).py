@@ -279,6 +279,7 @@ class TaskManagerUI(QMainWindow):
     def all_tasks(self):
         display = self.all_tasks_table
         self.load_data(display)
+        #self.all_tasks_table.setFixedSize()
         self.setCentralWidget(self.all_tasks_table)
         self.centralWidget().show()
 
@@ -291,6 +292,7 @@ class TaskManagerUI(QMainWindow):
         display = self.tab_1
         self.load_data(display)
         status = []
+        cd = datetime.strftime('%m/%d/%Y', datetime.date('now'))
         """with self.con as db:
             cur = db.cursor()
             execute = cur.execute('SELECT date from userstasks WHERE username = ?',
@@ -432,6 +434,7 @@ class DialogWindow(QWidget):
         self.text = self.user_input.text()
         content_session.append(self.text)
         DataBase().database_add_task()
+        self.hide()
 
 
 
@@ -516,11 +519,11 @@ class DataBase:
     def database_add_task(self):
         username = username_session[0]
         content = content_session[0]
-        steps = steps_session[0]
         with self.con as db:
             status = 'ongoing'
             cur = db.cursor()
             d = date[0].toPyDate()
+
             if not steps_session:
                 cur.execute(
                     'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
@@ -529,8 +532,7 @@ class DataBase:
                 cur.execute(
                     'INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?,'
                     ' ?)',
-                    (username, d, content, steps, status, time.ctime()))
-            self.con.commit()
+                    (username, d, content, steps_session[0], status, time.ctime()))
 
     def database_all_tasks(self, username):
         with self.con as db:
