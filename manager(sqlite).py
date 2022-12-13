@@ -3,13 +3,11 @@ import datetime
 import time
 import sys
 from datetime import datetime
-from datetime import timedelta
 import os.path
-import pprint
 import sqlite3
 from database_query import if_not_exists
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, QHeaderView
 
 
 class MainWindow(QWidget):
@@ -172,12 +170,69 @@ class SignUpWindow(QWidget):
 class TaskManagerUI(QMainWindow):
     def __init__(self):
         super(TaskManagerUI, self).__init__()
-        self.setFixedSize(800, 400)
+        self.con = sqlite3.connect("database/database.db")
+        self.setFixedSize(1000, 600)
         self.setWindowTitle('Task manager')
 
         self.menu = QtWidgets.QMenu
         self.toolbar = QtWidgets.QToolBar()
-        self.list = QtWidgets.QListWidget()
+        self.tabs = QtWidgets.QTabWidget()
+
+        self.all_tasks_table = QtWidgets.QTableWidget()
+        self.overdue_table = QtWidgets.QTableWidget()
+        self.three_days_table = QtWidgets.QTableWidget()
+        self.today_table = QtWidgets.QTableWidget()
+
+        self.overdue_table_header = self.overdue_table.horizontalHeader()
+        self.three_days_table_header = self.three_days_table.horizontalHeader()
+        self.today_table_header = self.today_table.horizontalHeader()
+        self.all_tasks_table_header = self.all_tasks_table.horizontalHeader()
+
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+        self.tab3 = QWidget()
+
+        self.tab_1 = self.overdue_table
+        self.tab_1.setFixedSize(995, 550)
+        self.tab_1.setParent(self.tab1)
+
+        self.tab_2 = self.three_days_table
+        self.tab_2.setFixedSize(995, 550)
+        self.tab_2.setParent(self.tab2)
+
+        self.tab_3 = self.today_table
+        self.tab_3.setFixedSize(995, 550)
+        self.tab_3.setParent(self.tab3)
+
+        self.tabs.addTab(self.tab1, 'Overdue tasks')
+        self.tabs.addTab(self.tab2, 'Tasks of the 3 days')
+        self.tabs.addTab(self.tab3, 'Tasks of the day')
+
+        # check number of rows in sqlite table
+        cur = self.con.cursor()
+        cur.execute('SELECT tid FROM userstasks')
+        res = cur.fetchall()
+
+        tables = [self.tab_1, self.tab_2, self.tab_3, self.all_tasks_table]
+        table_headers = [self.overdue_table_header, self.three_days_table_header, self.today_table_header,
+                         self.all_tasks_table_header]
+
+        choice_tables = [self.overdue_table, self.three_days_table, self.today_table]
+
+        for i in tables:
+            i.setRowCount(res[-1][0])
+            i.setColumnCount(6)
+            i.setStyleSheet('QTableWidget{color: #D3D3D3}')
+            i.setHorizontalHeaderLabels(
+                ['Username', 'Date', 'Content', 'Steps', 'Status', 'Status time'])
+
+        for i in table_headers:
+            i.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
 
         self.addToolBar(self.toolbar)
         self.toolbar.setMovable(False)
@@ -203,219 +258,53 @@ class TaskManagerUI(QMainWindow):
         self.usernameLine = QtWidgets.QLineEdit()
         self.passwordLine = QtWidgets.QLineEdit()
 
-        self.list.setStyleSheet('QListWidget::item {color:white;}')
-        self.setCentralWidget(self.list)
+        self.overdue_table.clicked.connect(self.overdue_tasks)
+        self.three_days_table.clicked.connect(self.three_days_tasks)
+        self.today_table.clicked.connect(self.today_tasks)
 
-    def clear_list(self):
-        self.list.clear()
-
-    def re_tasks(self):
-        username = username_session[0]
-        return DataBase().database_all_tasks(username)
+    def load_data(self, display=None):
+        cur = self.con.cursor()
+        cur.execute('SELECT username, date, content, steps, status, status_time FROM userstasks')
+        row = 0
+        while True:
+            res = cur.fetchone()
+            if res is None:
+                break
+            for column, item in enumerate(res):
+                display.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
+            row += 1
 
     def all_tasks(self):
-        for i in self.re_tasks():
-            # print(str(i))
-            self.list.addItem(str(i))
+        display = self.all_tasks_table
+        self.load_data(display)
+        self.setCentralWidget(self.all_tasks_table)
+        self.centralWidget().show()
 
     def add_task(self):
         self.dialog = DialogWindow()
         self.dialog.show()
 
+    def overdue_tasks(self):
+        display = self.tab_1
+        self.load_data(display)
+
+    def three_days_tasks(self):
+        display = self.tab_2
+        self.load_data(display)
+
+    def today_tasks(self):
+        display = self.tab_3
+        self.load_data(display)
+
+
     def tasks_status(self):
-        # DataBase().database_task_status(username, password, status_choice)
-        pass
+        self.setCentralWidget(self.tabs)
+        self.centralWidget().show()
 
     def update_status(self):
         pass
 
-
-# dialog window for add task func
-class DialogWindow(QWidget):
-    def __init__(self):
-        super(DialogWindow, self).__init__()
-        self.setWindowTitle('Add task')
-        self.setFixedSize(400, 300)
-
-        self.add_button = QtWidgets.QPushButton('Add')
-        self.date_edit = QtWidgets.QDateEdit()
-        self.date_edit.setCalendarPopup(True)
-        self.date_edit.setFixedHeight(30)
-        self.date_edit.setStyleSheet('QDateEdit {color: #D3D3D3}')
-        self.date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
-
-        self.user_input = QtWidgets.QLineEdit()
-
-        self.label = QtWidgets.QLabel('Input your task')
-        self.label.setStyleSheet('QLabel{font-size: 15pt}')
-        self.label.setAlignment(QtCore.Qt.AlignCenter)
-
-        self.check_box = QtWidgets.QCheckBox()
-        self.check_box.setText('Add steps ?')
-        self.check_box.setStyleSheet('QCheckBox {color: #D3D3D3;}')
-        self.check_box.stateChanged.connect(lambda: self.checked())
-
-        self.error_label = QtWidgets.QLabel('Input integer')
-        self.error_label.setStyleSheet('QLabel {color: red}')
-
-        layout = QtWidgets.QGridLayout()
-        layout.addWidget(self.label)
-        layout.addWidget(self.user_input)
-        layout.setSpacing(20)
-        layout.addWidget(self.date_edit)
-        layout.setSpacing(20)
-        layout.addWidget(self.check_box)
-        layout.addWidget(self.add_button)
-
-        self.setLayout(layout)
-
-        self.temp = self.date_edit.date()
-        date.append(self.temp)
-
-        self.add_button.clicked.connect(self.add_func)
-
-    def checked(self):
-        if self.check_box.isChecked():
-            self.dialog()
-
-    def dialog(self):
-        self.ask = AskUser()
-        self.ask.show()
-
-    def add_func(self):
-        self.text = self.user_input.text()
-        content_session.append(self.text)
-        DataBase().database_add_task()
-
-class AskUser(QWidget):
-    def __init__(self):
-        super(AskUser, self).__init__()
-        self.resize(300, 150)
-        self.setWindowTitle('Steps')
-        self.items = []
-        self.item_count = 0
-
-        label = QtWidgets.QLabel("Number of steps")
-        self.accept_btn = QtWidgets.QPushButton('Accept')
-        self.spinBox = QtWidgets.QSpinBox(self)
-        self.spinBox.setRange(0, 5)
-        self.spinBox.valueChanged.connect(self.set_item_count)
-        self.spinBox.setStyleSheet('QSpinBox {color: #D3D3D3}')
-        groupBox = QtWidgets.QGroupBox("Input steps")
-        groupBox.setStyleSheet('QGroupBox{color: #D3D3D3}')
-        self.item_layout = QtWidgets.QVBoxLayout(groupBox)
-        self.item_layout.addStretch(2)
-
-        g_layout = QtWidgets.QGridLayout(self)
-        g_layout.addWidget(label, 0, 0, 1, 2)
-        g_layout.addWidget(self.spinBox, 0, 2, 1, 1)
-        g_layout.addWidget(groupBox, 2, 0, 5, 3)
-        g_layout.addWidget(self.accept_btn)
-
-    def set_item_count(self, new_count: int):
-        lineEdit = QtWidgets.QLineEdit
-        n_items = len(self.items)
-        for i in range(n_items, new_count):
-            item = lineEdit(self)
-            self.items.append(item)
-            self.item_layout.insertWidget(n_items, item)
-        for i in range(self.item_count, new_count):
-            self.item_layout.itemAt(i).widget().show()
-        for i in range(new_count, self.item_count):
-            self.item_layout.itemAt(i).widget().hide()
-        self.item_count = new_count
-
-        if n_items > new_count:
-            self.items = self.items[:-1]
-
-        self.accept_btn.clicked.connect(self.accept_func)
-
-
-
-    def accept_func(self):
-        steps = []
-        for i in self.items:
-            steps.append(i.text())
-        self.steps_str = ''
-        for i in steps:
-            self.steps_str = ', '.join([str(item) for item in steps])
-        steps_session.append(self.steps_str)
-        print('iz func', steps_session[0])
-
-    """def accept_func(self):
-            steps = []
-            for i in self.items:
-                steps.append(i.text())
-            self.steps_str = ''
-            for i in steps:
-                self.steps_str = self.steps_str + " " + i + ','
-            steps_session.append(self.steps_str)"""
-
-
-class SignUp:
-    def __init__(self):
-        self.con = sqlite3.connect("database/database.db")
-
-    def user_exists(self, username):
-        with self.con as db:
-            cur = db.cursor()
-            cur.execute("SELECT username FROM usersdata")
-            names = {name[0] for name in cur.fetchall()}
-            if username in names:
-                return True
-        return False
-
-
-class DataBase:
-    def __init__(self):
-        self.con = sqlite3.connect("database/database.db")
-
-    def database_sign_up(self, username, password):
-        with self.con as db:
-            cur = db.cursor()
-            cur.execute('INSERT INTO usersdata(username, password) VALUES (?, ?)',
-                        Tasks().func_user_info(username, password))
-
-    def database_add_task(self):
-        username = username_session[0]
-        content = content_session[0]
-        with self.con as db:
-            status = 'ongoing'
-            #d = input('Введите дату (ГГГГ-ММ-ДД): ')
-            #date = datetime.strptime(d, '%Y-%m-%d')
-            cur = db.cursor()
-            status_time = time.ctime()
-            d = date[0].toPyDate()
-            #for i in steps_session:
-                #if not i:
-                    #steps_session.remove(i)
-            #steps = "ddd"
-            print('iz db', steps_session[0])
-            steps = steps_session[0]
-            if steps_session:
-                cur.execute(
-                    'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
-                    (username, d, content, status, time.ctime()))
-            else:
-                cur.execute(
-                    'INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?,'
-                    ' ?)',
-                    (username, d, content, steps_session[0], status, time.ctime()))
-
-    def database_all_tasks(self, username):
-        with self.con as db:
-            row_list = []
-            cur = db.cursor()
-            execute = cur.execute('SELECT * from userstasks WHERE username = ?',
-                                  (Tasks().func_username_container(username)))
-            if not Tasks().tasks_exists(username):
-                for row in execute:
-                    row_list.append(row)
-                return row_list
-            else:
-                print("Not a single task was found")
-
-    def database_task_status(self, username, status_choice, password):
+    """def database_task_status(self, username, status_choice, password):
         status = []
         with self.con as db:
             cur = db.cursor()
@@ -478,7 +367,187 @@ class DataBase:
                     pprint.pprint(status)
                 else:
                     print('Задач на ближайшие 3 дня не нашлось!')
-                TaskManager().task_manager(username, password)
+                TaskManager().task_manager(username, password)"""
+
+
+# dialog window for task status
+class StatusDialog(QWidget):
+    def __init__(self):
+        super(StatusDialog, self).__init__()
+        self.setWindowTitle('Status choice')
+        self.setFixedSize(400, 300)
+
+
+# dialog window for add task func
+class DialogWindow(QWidget):
+    def __init__(self):
+        super(DialogWindow, self).__init__()
+        self.setWindowTitle('Add task')
+        self.setFixedSize(400, 300)
+
+        self.add_button = QtWidgets.QPushButton('Add')
+        self.date_edit = QtWidgets.QDateEdit()
+        self.date_edit.setCalendarPopup(True)
+        self.date_edit.setFixedHeight(30)
+        self.date_edit.setStyleSheet('QDateEdit {color: #D3D3D3}')
+        self.date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
+
+        self.user_input = QtWidgets.QLineEdit()
+
+        self.label = QtWidgets.QLabel('Input your task')
+        self.label.setStyleSheet('QLabel{font-size: 15pt}')
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.check_box = QtWidgets.QCheckBox()
+        self.check_box.setText('Add steps ?')
+        self.check_box.setStyleSheet('QCheckBox {color: #D3D3D3;}')
+        self.check_box.stateChanged.connect(lambda: self.checked())
+
+        self.error_label = QtWidgets.QLabel('Input integer')
+        self.error_label.setStyleSheet('QLabel {color: red}')
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(self.label)
+        layout.addWidget(self.user_input)
+        layout.setSpacing(20)
+        layout.addWidget(self.date_edit)
+        layout.setSpacing(20)
+        layout.addWidget(self.check_box)
+        layout.addWidget(self.add_button)
+
+        self.setLayout(layout)
+
+        self.temp = self.date_edit.date()
+        date.append(self.temp)
+
+        self.add_button.clicked.connect(self.add_func)
+
+    def checked(self):
+        if self.check_box.isChecked():
+            self.dialog()
+
+    def dialog(self):
+        self.ask = AskUser()
+        self.ask.show()
+
+    def add_func(self):
+        self.text = self.user_input.text()
+        content_session.append(self.text)
+        DataBase().database_add_task()
+
+
+
+class AskUser(QWidget):
+    def __init__(self):
+        super(AskUser, self).__init__()
+        self.resize(300, 150)
+        self.setWindowTitle('Steps')
+        self.items = []
+        self.item_count = 0
+
+        label = QtWidgets.QLabel("Number of steps")
+        self.accept_btn = QtWidgets.QPushButton('Accept')
+        self.spinBox = QtWidgets.QSpinBox(self)
+        self.spinBox.setRange(0, 5)
+        self.spinBox.valueChanged.connect(self.set_item_count)
+        self.spinBox.setStyleSheet('QSpinBox {color: #D3D3D3}')
+        groupBox = QtWidgets.QGroupBox("Input steps")
+        groupBox.setStyleSheet('QGroupBox{color: #D3D3D3}')
+        self.item_layout = QtWidgets.QVBoxLayout(groupBox)
+        self.item_layout.addStretch(2)
+
+        g_layout = QtWidgets.QGridLayout(self)
+        g_layout.addWidget(label, 0, 0, 1, 2)
+        g_layout.addWidget(self.spinBox, 0, 2, 1, 1)
+        g_layout.addWidget(groupBox, 2, 0, 5, 3)
+        g_layout.addWidget(self.accept_btn)
+
+    def set_item_count(self, new_count: int):
+        lineEdit = QtWidgets.QLineEdit
+        n_items = len(self.items)
+        for i in range(n_items, new_count):
+            item = lineEdit(self)
+            self.items.append(item)
+            self.item_layout.insertWidget(n_items, item)
+        for i in range(self.item_count, new_count):
+            self.item_layout.itemAt(i).widget().show()
+        for i in range(new_count, self.item_count):
+            self.item_layout.itemAt(i).widget().hide()
+        self.item_count = new_count
+
+        if n_items > new_count:
+            self.items = self.items[:-1]
+
+        self.accept_btn.clicked.connect(self.accept_func)
+
+    def accept_func(self):
+        steps = []
+        for i in self.items:
+            steps.append(i.text())
+        self.steps_str = ''
+        for i in steps:
+            self.steps_str = ', '.join([str(item) for item in steps])
+        steps_session.append(self.steps_str)
+        self.close()
+
+
+class SignUp:
+    def __init__(self):
+        self.con = sqlite3.connect("database/database.db")
+
+    def user_exists(self, username):
+        with self.con as db:
+            cur = db.cursor()
+            cur.execute("SELECT username FROM usersdata")
+            names = {name[0] for name in cur.fetchall()}
+            if username in names:
+                return True
+        return False
+
+
+class DataBase:
+    def __init__(self):
+        self.con = sqlite3.connect("database/database.db")
+
+    def database_sign_up(self, username, password):
+        with self.con as db:
+            cur = db.cursor()
+            cur.execute('INSERT INTO usersdata(username, password) VALUES (?, ?)',
+                        Tasks().func_user_info(username, password))
+
+    def database_add_task(self):
+        username = username_session[0]
+        content = content_session[0]
+        steps = steps_session[0]
+        with self.con as db:
+            status = 'ongoing'
+            cur = db.cursor()
+            d = date[0].toPyDate()
+            if not steps_session:
+                cur.execute(
+                    'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
+                    (username, d, content, status, time.ctime()))
+            else:
+                cur.execute(
+                    'INSERT INTO userstasks(username, date, content, steps, status, status_time) VALUES (?, ?, ?, ?, ?,'
+                    ' ?)',
+                    (username, d, content, steps, status, time.ctime()))
+            self.con.commit()
+
+    def database_all_tasks(self, username):
+        with self.con as db:
+            row_list = []
+            cur = db.cursor()
+            execute = cur.execute('SELECT * from userstasks WHERE username = ?',
+                                  (Tasks().func_username_container(username)))
+            if not Tasks().tasks_exists(username):
+                for row in execute:
+                    row_list.append(row)
+                return row_list
+            else:
+                print("Not a single task was found")
+
+
 
     def database_update_status(self, username, password):
         with self.con as db:
