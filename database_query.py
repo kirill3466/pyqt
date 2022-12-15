@@ -1,4 +1,3 @@
-
 if_not_exists = '''
                                     CREATE TABLE IF NOT EXISTS usersdata(
                                         uid INTEGER PRIMARY KEY AUTOINCREMENT,

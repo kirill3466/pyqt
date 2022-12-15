@@ -71,10 +71,6 @@ class LogInWindow(QWidget):
         self.errorLabel.hide()
         self.setLayout(layout)
 
-    # def go_back(self):
-    # os.system('cls')
-    # widget.setCurrentIndex(widget.currentIndex() - 1)
-
     def login_function(self):
         username = self.usernameLine.text()
         password = self.passwordLine.text()
@@ -142,9 +138,6 @@ class SignUpWindow(QWidget):
         layout.addWidget(self.backButton)
         self.errorLabel.hide()
         self.setLayout(layout)
-
-    # def go_back(self):
-    # widget.setCurrentIndex(widget.currentIndex() - 1)
 
     def create_func(self):
         username = self.usernameLine.text()
@@ -219,7 +212,7 @@ class TaskManagerUI(QMainWindow):
         table_headers = [self.overdue_table_header, self.three_days_table_header, self.today_table_header,
                          self.all_tasks_table_header]
 
-        #choice_tables = [self.overdue_table, self.three_days_table, self.today_table]
+        # choice_tables = [self.overdue_table, self.three_days_table, self.today_table]
 
         for i in tables:
             i.setRowCount(rows_number[-1][0])
@@ -279,7 +272,7 @@ class TaskManagerUI(QMainWindow):
     def all_tasks(self):
         display = self.all_tasks_table
         self.load_data(display)
-        #self.all_tasks_table.setFixedSize()
+        # self.all_tasks_table.setFixedSize()
         self.setCentralWidget(self.all_tasks_table)
         self.centralWidget().show()
 
@@ -290,56 +283,81 @@ class TaskManagerUI(QMainWindow):
     def overdue_tasks(self):
         username = username_session[0]
         display = self.tab_1
-        #self.load_data(display)
-        status = []
         with self.con as db:
             cur = db.cursor()
 
-            cur.execute('SELECT * from userstasks WHERE username = ? ',
-                                  (Tasks().func_username_container(username)))
-            res = cur.fetchall()
+            cur.execute(
+                'SELECT username, date, content, steps, status, status_time FROM userstasks WHERE username = ? ',
+                (Tasks().func_username_container(username)))
             row = 0
-            column = 6
-            for column, i in enumerate(res):
-                d = time.localtime()
-                getctime = time.strftime('%Y-%m-%d', d)
-                t1 = datetime.strptime(i[2], "%Y-%m-%d")
-                t2 = datetime.strptime(getctime, "%Y-%m-%d")
-                time_diff = abs(t1 - t2)
-                if time_diff > timedelta(days=3):
-                    print('overdue!!!!!!!!!!!', i)
-                else:
-                    display.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
-                    print(i)
-
-
-                """d = time.localtime()
-                getctime = time.strftime('%Y-%m-%d ', d)
-                t1 = datetime.strptime(i[0], "%Y-%m-%d")
-                t2 = datetime.strptime(getctime, "%Y-%m-%d")
-                time_diff = abs(t1 - t2)
-                if time_diff > timedelta(days=3):
-                    display.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
-                    row += 1"""
-
-            """ d = time.localtime()
-                    getctime = time.strftime('%Y-%m-%d %H:%M:%S', d)
-                    t1 = datetime.strptime(i['date'], "%Y-%m-%d %H:%M:%S")
-                    t2 = datetime.strptime(getctime, "%Y-%m-%d %H:%M:%S")
+            while True:
+                res = cur.fetchone()
+                if res is None:
+                    break
+                for column, i in enumerate(res):
+                    d = time.localtime()
+                    getctime = time.strftime('%Y-%m-%d', d)
+                    t1 = datetime.strptime(res[1], "%Y-%m-%d")
+                    t2 = datetime.strptime(getctime, "%Y-%m-%d")
                     time_diff = abs(t1 - t2)
                     if time_diff > timedelta(days=3):
-                        status.append(i)
+                        row += 1
                     else:
-                        message = 'Просроченных задач не нашлось!'"""
-
+                        display.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
+                row += 1
 
     def three_days_tasks(self):
+        username = username_session[0]
         display = self.tab_2
         self.load_data(display)
+        with self.con as db:
+            cur = db.cursor()
+
+            cur.execute(
+                'SELECT username, date, content, steps, status, status_time FROM userstasks WHERE username = ? ',
+                (Tasks().func_username_container(username)))
+            row = 0
+            while True:
+                res = cur.fetchone()
+                if res is None:
+                    break
+                for column, i in enumerate(res):
+                    d = time.localtime()
+                    getctime = time.strftime('%Y-%m-%d', d)
+                    t1 = datetime.strptime(res[1], "%Y-%m-%d")
+                    t2 = datetime.strptime(getctime, "%Y-%m-%d")
+                    time_diff = abs(t1 - t2)
+                    if time_diff > timedelta(days=3):
+                        row += 1
+                    else:
+                        display.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
+                row += 1
 
     def today_tasks(self):
+        username = username_session[0]
         display = self.tab_3
         self.load_data(display)
+        with self.con as db:
+            cur = db.cursor()
+
+            cur.execute('SELECT username, date, content, steps, status, status_time FROM userstasks WHERE username = ? '
+                        , (Tasks().func_username_container(username)))
+            row = 0
+            while True:
+                res = cur.fetchone()
+                if res is None:
+                    break
+                for column, i in enumerate(res):
+                    d = time.localtime()
+                    getctime = time.strftime('%Y-%m-%d', d)
+                    t1 = datetime.strptime(res[1], "%Y-%m-%d")
+                    t2 = datetime.strptime(getctime, "%Y-%m-%d")
+                    time_diff = abs(t1 - t2)
+                    if time_diff > timedelta(days=1):
+                        row += 1
+                    else:
+                        display.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
+                row += 1
 
     def tasks_status(self):
         self.setCentralWidget(self.tabs)
@@ -347,20 +365,6 @@ class TaskManagerUI(QMainWindow):
 
     def update_status(self):
         pass
-
-    def overdue_checker(self):
-        with self.con as db:
-            cur = db.cursor()
-
-
-
-
-# dialog window for task status
-class StatusDialog(QWidget):
-    def __init__(self):
-        super(StatusDialog, self).__init__()
-        self.setWindowTitle('Status choice')
-        self.setFixedSize(400, 300)
 
 
 # dialog window for add task func
@@ -375,8 +379,7 @@ class DialogWindow(QWidget):
         self.date_edit.setCalendarPopup(True)
         self.date_edit.setFixedHeight(30)
         self.date_edit.setStyleSheet('QDateEdit {color: #D3D3D3}')
-        #self.date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
-
+        # self.date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
 
         self.user_input = QtWidgets.QLineEdit()
 
@@ -421,7 +424,6 @@ class DialogWindow(QWidget):
         content_session.append(self.text)
         DataBase().database_add_task()
         self.hide()
-
 
 
 class AskUser(QWidget):
@@ -567,7 +569,6 @@ class DataBase:
             else:
                 print('Введите завершено или отменено!')
 
-
     def database_task_exists(self, username):
         with self.con as db:
             cur = db.cursor()
@@ -634,9 +635,9 @@ class TaskManager:
         os.makedirs('datafiles', exist_ok=True)
         os.makedirs('database', exist_ok=True)
 
-    # def data_files(self):
-    #     if not os.path.isdir("database"):
-    #         os.mkdir("database")
+    def data_files(self):
+        if not os.path.isdir("database"):
+            os.mkdir("database")
 
     def data_files_tasks(self):
         with self.con as db:
@@ -659,8 +660,8 @@ class TaskManager:
 
 if __name__ == "__main__":
     # manager = TaskManager(user_name="awfawafgrg")
-    # manager.data_files()
-    # manager.data_files_tasks()
+    TaskManager().data_files()
+    TaskManager().data_files_tasks()
     # manager.main()
     app = QApplication(sys.argv)
     style = """
