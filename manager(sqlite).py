@@ -2,14 +2,12 @@ import os
 import datetime
 import time
 import sys
-from datetime import datetime
-from datetime import timedelta
-from datetime import date
+from datetime import datetime, timedelta, date
 import os.path
 import sqlite3
 from database_query import if_not_exists
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, QHeaderView
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, QHeaderView, QComboBox
 
 
 class MainWindow(QWidget):
@@ -178,6 +176,8 @@ class TaskManagerUI(QMainWindow):
         self.three_days_table = QtWidgets.QTableWidget()
         self.today_table = QtWidgets.QTableWidget()
 
+        self.cbox_items = ['Ongoing', 'Completed', 'Cancelled']
+
         self.overdue_table_header = self.overdue_table.horizontalHeader()
         self.three_days_table_header = self.three_days_table.horizontalHeader()
         self.today_table_header = self.today_table.horizontalHeader()
@@ -219,7 +219,7 @@ class TaskManagerUI(QMainWindow):
             i.setColumnCount(6)
             i.setStyleSheet('QTableWidget{color: #D3D3D3}')
             i.setHorizontalHeaderLabels(
-                ['Username', 'Date', 'Content', 'Steps', 'Status', 'Status time'])
+                ['Username', 'Date', 'Content', 'Steps', 'Status', 'Status set time'])
 
         for i in table_headers:
             i.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -266,7 +266,12 @@ class TaskManagerUI(QMainWindow):
             if res is None:
                 break
             for column, item in enumerate(res):
+                combo = QComboBox()
+                combo.addItems(self.cbox_items)
+                combo.setStyleSheet('QComboBox{color: #D3D3D3};')
                 display.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
+                display.setCellWidget(row, 4, combo)
+                combo.currentTextChanged.connect(self.combo_box_changed)
             row += 1
 
     def all_tasks(self):
@@ -277,15 +282,13 @@ class TaskManagerUI(QMainWindow):
         self.centralWidget().show()
 
     def add_task(self):
-        self.dialog = DialogWindow()
-        self.dialog.show()
+        dialog = DialogWindow()
+        dialog.show()
 
     def overdue_tasks(self):
         username = username_session[0]
-        display = self.tab_1
         with self.con as db:
             cur = db.cursor()
-
             cur.execute(
                 'SELECT username, date, content, steps, status, status_time FROM userstasks WHERE username = ? ',
                 (Tasks().func_username_container(username)))
@@ -301,18 +304,15 @@ class TaskManagerUI(QMainWindow):
                     t2 = datetime.strptime(getctime, "%Y-%m-%d")
                     time_diff = abs(t1 - t2)
                     if time_diff > timedelta(days=3):
-                        row += 1
+                        self.tab_1.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
                     else:
-                        display.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
+                        continue
                 row += 1
 
     def three_days_tasks(self):
         username = username_session[0]
-        display = self.tab_2
-        self.load_data(display)
         with self.con as db:
             cur = db.cursor()
-
             cur.execute(
                 'SELECT username, date, content, steps, status, status_time FROM userstasks WHERE username = ? ',
                 (Tasks().func_username_container(username)))
@@ -322,21 +322,19 @@ class TaskManagerUI(QMainWindow):
                 if res is None:
                     break
                 for column, i in enumerate(res):
-                    d = time.localtime()
-                    getctime = time.strftime('%Y-%m-%d', d)
-                    t1 = datetime.strptime(res[1], "%Y-%m-%d")
-                    t2 = datetime.strptime(getctime, "%Y-%m-%d")
-                    time_diff = abs(t1 - t2)
-                    if time_diff > timedelta(days=3):
-                        row += 1
+                    set_data = datetime.strptime(res[1], "%Y-%m-%d")
+                    if (datetime.now() - set_data).days > 3:
+                        print('overdue!!!!!!!!!!!', res)
                     else:
-                        display.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
+                        self.tab_2.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
+                #                    if now - timedelta(hours=24) <= set_data <= now + timedelta(hours=24):
+                #                        self.tab_3.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
+                #                    else:
+                #                        print('overdue!!!!!!!!!!!', res)
                 row += 1
 
     def today_tasks(self):
         username = username_session[0]
-        display = self.tab_3
-        self.load_data(display)
         with self.con as db:
             cur = db.cursor()
 
@@ -348,15 +346,13 @@ class TaskManagerUI(QMainWindow):
                 if res is None:
                     break
                 for column, i in enumerate(res):
-                    d = time.localtime()
-                    getctime = time.strftime('%Y-%m-%d', d)
-                    t1 = datetime.strptime(res[1], "%Y-%m-%d")
-                    t2 = datetime.strptime(getctime, "%Y-%m-%d")
-                    time_diff = abs(t1 - t2)
-                    if time_diff > timedelta(days=1):
-                        row += 1
+                    now = datetime.now()
+                    set_data = datetime.strptime(res[1], "%Y-%m-%d")
+
+                    if (datetime.now() - set_data).days > 1:
+                        print('overdue!!!!!!!!!!!', res)
                     else:
-                        display.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
+                        self.tab_3.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
                 row += 1
 
     def tasks_status(self):
@@ -365,6 +361,13 @@ class TaskManagerUI(QMainWindow):
 
     def update_status(self):
         pass
+
+    def combo_box_changed(self, value):
+        status = value
+        with self.con as db:
+            rowid = self.all_tasks_table.currentRow() + 1
+            cur = db.cursor()
+            cur.execute('UPDATE userstasks SET status = ? WHERE rowid = ?', (status, rowid))
 
 
 # dialog window for add task func
@@ -379,7 +382,7 @@ class DialogWindow(QWidget):
         self.date_edit.setCalendarPopup(True)
         self.date_edit.setFixedHeight(30)
         self.date_edit.setStyleSheet('QDateEdit {color: #D3D3D3}')
-        # self.date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
+        self.date_edit.setDateTime(QtCore.QDateTime.currentDateTime())
 
         self.user_input = QtWidgets.QLineEdit()
 
@@ -406,14 +409,13 @@ class DialogWindow(QWidget):
 
         self.setLayout(layout)
 
-        self.temp = self.date_edit.date()
-        date.append(self.temp)
-
         self.add_button.clicked.connect(self.add_func)
 
     def checked(self):
         if self.check_box.isChecked():
             self.dialog()
+
+    # print(self.date_edit.)
 
     def dialog(self):
         self.ask = AskUser()
@@ -422,6 +424,8 @@ class DialogWindow(QWidget):
     def add_func(self):
         self.text = self.user_input.text()
         content_session.append(self.text)
+        self.temp = self.date_edit.calendarWidget().selectedDate()
+        date.append(self.temp)
         DataBase().database_add_task()
         self.hide()
 
@@ -510,9 +514,9 @@ class DataBase:
         with self.con as db:
             status = 'ongoing'
             cur = db.cursor()
-            d = date[0].toPyDate()
+            d = date[-1].toPyDate()
             print(date)
-            print(date[0])
+            print(date[-1])
             date1 = time.localtime()
             getctime = time.strftime('%Y-%m-%d', date1)
             # time.ctime()
@@ -539,35 +543,6 @@ class DataBase:
                 return row_list
             else:
                 print("Not a single task was found")
-
-    def database_update_status(self, username, password):
-        with self.con as db:
-            cur = db.cursor()
-            d = time.localtime()
-            getctime = time.strftime('%Y-%m-%d %H:%M:%S', d)
-            t = datetime.strptime(getctime, "%Y-%m-%d %H:%M:%S")
-            execute = cur.execute('SELECT date from userstasks WHERE username = ?',
-                                  (Tasks().func_username_container(username)))
-            for row in execute:
-                cur.execute('SELECT * from userstasks WHERE username = ?',
-                            (Tasks().func_username_container(username)))
-                task_date = cur.fetchall()
-                for row, count in enumerate(task_date, start=1):
-                    print("|", row, "|", 'Задача:', count[3], '| Статус: ', count[5], '|')
-            choice = int(input('Выберите номер задачи, который желаете изменить\n'))
-            print('Вы выбрали задачу № ', choice)
-            choice2 = (input('Изменить на завершено, или отменено?\n'))
-
-            if choice2.lower() == 'завершено':
-                update_variables = 'completed', username, choice
-                cur.execute('UPDATE userstasks SET status = ? WHERE username = ? AND tid = ?',
-                            update_variables)
-            elif choice2.lower() == 'отменено':
-                update_variables = 'cancelled', username, choice
-                cur.execute('UPDATE userstasks SET status = ? WHERE username = ? AND tid = ?',
-                            update_variables)
-            else:
-                print('Введите завершено или отменено!')
 
     def database_task_exists(self, username):
         with self.con as db:
@@ -627,7 +602,7 @@ class TaskManager:
     def __init__(self, user_name=None, db=None):
         self.username = user_name
         self.create_structure()
-        self.con = sqlite3.connect("database/database.db")  # используем далее self.con
+        self.con = sqlite3.connect("database/database.db")
         # self.cur = db.cursor()
 
     @staticmethod
@@ -643,12 +618,6 @@ class TaskManager:
         with self.con as db:
             db.executescript(if_not_exists)
 
-    def main(self, password=None, username=None):
-        os.system('cls')
-        print("Меню")
-        choice = input("1 - Вход \n2 - Регистрация \n3 - Выход \nВыберите пункт: ")
-        self.return_function_for_main(choice)()
-
     def return_function_for_main(self, choice):
         funcctions = {
             1: self.__getattribute__("log_in"),
@@ -659,10 +628,8 @@ class TaskManager:
 
 
 if __name__ == "__main__":
-    # manager = TaskManager(user_name="awfawafgrg")
     TaskManager().data_files()
     TaskManager().data_files_tasks()
-    # manager.main()
     app = QApplication(sys.argv)
     style = """
         QWidget{
