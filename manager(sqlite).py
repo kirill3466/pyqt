@@ -2,7 +2,7 @@ import os
 import datetime
 import time
 import sys
-from datetime import datetime, timedelta, date
+from datetime import datetime, date
 import os.path
 import sqlite3
 from database_query import if_not_exists
@@ -268,6 +268,8 @@ class TaskManagerUI(QMainWindow):
                 combo = QComboBox()
                 combo.addItems(self.cbox_items)
                 combo.setStyleSheet('QComboBox{color: #D3D3D3};')
+                combo.setStyleSheet('selection-background-color: rgb(211, 211, 211)')
+                combo.setStyleSheet('color: rgb(211, 211, 211)')
                 display.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
                 display.setCellWidget(row, 4, combo)
                 combo.currentTextChanged.connect(self.combo_box_changed)
@@ -372,11 +374,12 @@ class TaskManagerUI(QMainWindow):
         pass
 
     def combo_box_changed(self, value):
-        status = value
+        print(value)
+        print(self.all_tasks_table.currentRow())
         with self.con as db:
             rowid = self.all_tasks_table.currentRow() + 1
             cur = db.cursor()
-            cur.execute('UPDATE userstasks SET status = ? WHERE rowid = ?', (status, rowid))
+            cur.execute('UPDATE userstasks SET status = ? WHERE rowid = ?', (value, rowid))
 
 
 # dialog window for add task func
@@ -529,7 +532,6 @@ class DataBase:
             date1 = time.localtime()
             getctime = time.strftime('%Y-%m-%d', date1)
             # time.ctime()
-
             if not steps_session:
                 cur.execute(
                     'INSERT INTO userstasks(username, date, content, status, status_time) VALUES (?, ?, ?, ?, ?)',
