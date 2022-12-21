@@ -77,6 +77,7 @@ class LogInWindow(QWidget):
             self.errorLabel.show()
         else:
             if SignUp().user_exists(username):
+                print(Tasks().compare_data(username, password))
                 if Tasks().compare_data(username, password):
                     # self.errorLabel.setText("Successfully logged in.")
                     # self.errorLabel.setStyleSheet("color : 'green'")
@@ -253,9 +254,7 @@ class TaskManagerUI(QMainWindow):
         self.usernameLine = QtWidgets.QLineEdit()
         self.passwordLine = QtWidgets.QLineEdit()
 
-        self.overdue_table.clicked.connect(self.overdue_tasks)
-        self.three_days_table.clicked.connect(self.three_days_tasks)
-        self.today_table.clicked.connect(self.today_tasks)
+        self.tabs.tabBarClicked.connect(self.filter_tasks)
 
     def load_data(self, display=None):
         cur = self.con.cursor()
@@ -285,6 +284,16 @@ class TaskManagerUI(QMainWindow):
         dialog = DialogWindow()
         dialog.show()
 
+    def filter_tasks(self, index):
+        if index == 0:
+            self.overdue_tasks()
+        elif index == 1:
+            self.three_days_tasks()
+        elif index == 2:
+            self.today_tasks()
+        else:
+            pass
+
     def overdue_tasks(self):
         username = username_session[0]
         with self.con as db:
@@ -297,16 +306,16 @@ class TaskManagerUI(QMainWindow):
                 res = cur.fetchone()
                 if res is None:
                     break
-                for column, i in enumerate(res):
-                    d = time.localtime()
-                    getctime = time.strftime('%Y-%m-%d', d)
-                    t1 = datetime.strptime(res[1], "%Y-%m-%d")
-                    t2 = datetime.strptime(getctime, "%Y-%m-%d")
-                    time_diff = abs(t1 - t2)
-                    if time_diff > timedelta(days=3):
+                d = time.localtime()
+                getctime = time.strftime('%Y-%m-%d', d)
+                t1 = datetime.strptime(res[1], "%Y-%m-%d")
+                t2 = datetime.strptime(getctime, "%Y-%m-%d")
+                time_diff = abs((t1 - t2).days)
+                if time_diff >= 3:
+                    for column, i in enumerate(res):
                         self.tab_1.setItem(row, column, QtWidgets.QTableWidgetItem(str(i)))
-                    else:
-                        continue
+                else:
+                    continue
                 row += 1
 
     def three_days_tasks(self):
