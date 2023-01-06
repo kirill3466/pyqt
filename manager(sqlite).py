@@ -10,6 +10,18 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, QHeaderView, QComboBox
 
 
+class ComboBoxStatus(QComboBox):
+    def __init__(self):
+        super().__init__()
+        self.cbox_items = ['Ongoing', 'Completed', 'Cancelled']
+        self.addItems(self.cbox_items)
+        self.setStyleSheet('QComboBox{color: #D3D3D3};')
+        self.setStyleSheet('selection-background-color: rgb(211, 211, 211)')
+        self.setStyleSheet('color: rgb(211, 211, 211)')
+        value = self.currentText()
+        self.currentTextChanged.connect(TaskManagerUI().combo_box_changed(value))
+
+
 class MainWindow(QWidget):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -170,65 +182,13 @@ class TaskManagerUI(QMainWindow):
 
         self.menu = QtWidgets.QMenu
         self.toolbar = QtWidgets.QToolBar()
-        self.tabs = QtWidgets.QTabWidget()
-
-        self.all_tasks_table = QtWidgets.QTableWidget()
-        self.overdue_table = QtWidgets.QTableWidget()
-        self.three_days_table = QtWidgets.QTableWidget()
-        self.today_table = QtWidgets.QTableWidget()
 
         self.cbox_items = ['Ongoing', 'Completed', 'Cancelled']
-
-        self.overdue_table_header = self.overdue_table.horizontalHeader()
-        self.three_days_table_header = self.three_days_table.horizontalHeader()
-        self.today_table_header = self.today_table.horizontalHeader()
-        self.all_tasks_table_header = self.all_tasks_table.horizontalHeader()
-
-        self.tab1 = QWidget()
-        self.tab2 = QWidget()
-        self.tab3 = QWidget()
-
-        self.tab_1 = self.overdue_table
-        self.tab_1.setFixedSize(995, 550)
-        self.tab_1.setParent(self.tab1)
-
-        self.tab_2 = self.three_days_table
-        self.tab_2.setFixedSize(995, 550)
-        self.tab_2.setParent(self.tab2)
-
-        self.tab_3 = self.today_table
-        self.tab_3.setFixedSize(995, 550)
-        self.tab_3.setParent(self.tab3)
-
-        self.tabs.addTab(self.tab1, 'Overdue tasks')
-        self.tabs.addTab(self.tab2, 'Tasks of the 3 days')
-        self.tabs.addTab(self.tab3, 'Tasks of the day')
 
         # check number of rows in sqlite table
         cur = self.con.cursor()
         cur.execute('SELECT tid FROM userstasks')
-        rows_number = cur.fetchall()
-
-        tables = [self.tab_1, self.tab_2, self.tab_3, self.all_tasks_table]
-        table_headers = [self.overdue_table_header, self.three_days_table_header, self.today_table_header,
-                         self.all_tasks_table_header]
-
-        # choice_tables = [self.overdue_table, self.three_days_table, self.today_table]
-
-        for i in tables:
-            i.setRowCount(rows_number[-1][0])
-            i.setColumnCount(6)
-            i.setStyleSheet('QTableWidget{color: #D3D3D3}')
-            i.setHorizontalHeaderLabels(
-                ['Username', 'Date', 'Content', 'Steps', 'Status', 'Status set time'])
-
-        for i in table_headers:
-            i.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-            i.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-            i.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
-            i.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
-            i.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
-            i.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        self.rows_number = cur.fetchall()
 
         self.addToolBar(self.toolbar)
         self.toolbar.setMovable(False)
@@ -239,8 +199,6 @@ class TaskManagerUI(QMainWindow):
         self.button_action2.triggered.connect(self.add_task)
         self.button_action3 = QAction("Tasks status", self)
         self.button_action3.triggered.connect(self.tasks_status)
-        self.button_action4 = QAction("Update status", self)
-        self.button_action4.triggered.connect(self.update_status)
 
         self.toolbar.setStyleSheet('background-color: white;')
         self.toolbar.addAction(self.button_action)
@@ -248,13 +206,9 @@ class TaskManagerUI(QMainWindow):
         self.toolbar.addAction(self.button_action2)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.button_action3)
-        self.toolbar.addSeparator()
-        self.toolbar.addAction(self.button_action4)
 
         self.usernameLine = QtWidgets.QLineEdit()
         self.passwordLine = QtWidgets.QLineEdit()
-
-        self.tabs.tabBarClicked.connect(self.filter_tasks)
 
     def load_data(self, display=None):
         cur = self.con.cursor()
@@ -265,21 +219,41 @@ class TaskManagerUI(QMainWindow):
             if res is None:
                 break
             for column, item in enumerate(res):
-                combo = QComboBox()
-                combo.addItems(self.cbox_items)
-                combo.setStyleSheet('QComboBox{color: #D3D3D3};')
-                combo.setStyleSheet('selection-background-color: rgb(211, 211, 211)')
-                combo.setStyleSheet('color: rgb(211, 211, 211)')
                 display.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
-                display.setCellWidget(row, 4, combo)
-                combo.currentTextChanged.connect(self.combo_box_changed)
+                if isinstance(item, str) and item.title() in self.cbox_items:
+                    combo = QComboBox()
+                    combo.addItems(self.cbox_items)
+                    combo.setStyleSheet('QComboBox{color: #D3D3D3};')
+                    combo.setStyleSheet('selection-background-color: rgb(211, 211, 211)')
+                    combo.setStyleSheet('color: rgb(211, 211, 211)')
+                    index_ = combo.findText(str(item).title())
+                    if index_ != -1:
+                        combo.setCurrentText(item.title())
+                        display.setCellWidget(row, 4, combo)
+                    combo.currentTextChanged.connect(self.combo_box_changed)
             row += 1
 
     def all_tasks(self):
+        self.all_tasks_table = QtWidgets.QTableWidget()
+        all_tasks_table_header = self.all_tasks_table.horizontalHeader()
+        self.all_tasks_table.setRowCount(self.rows_number[-1][0])
+        self.all_tasks_table.setColumnCount(6)
+        self.all_tasks_table.setStyleSheet('QTableWidget{color: #D3D3D3}')
+        self.all_tasks_table.setHorizontalHeaderLabels(
+                ['Username', 'Date', 'Content', 'Steps', 'Status', 'Status set time'])
+
+        all_tasks_table_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        all_tasks_table_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        all_tasks_table_header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        all_tasks_table_header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        all_tasks_table_header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        all_tasks_table_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+
         display = self.all_tasks_table
         self.load_data(display)
         # self.all_tasks_table.setFixedSize()
         self.setCentralWidget(self.all_tasks_table)
+
         self.centralWidget().show()
 
     def add_task(self):
@@ -367,19 +341,62 @@ class TaskManagerUI(QMainWindow):
                 row += 1
 
     def tasks_status(self):
-        self.setCentralWidget(self.tabs)
+        tabs = QtWidgets.QTabWidget()
+        overdue_table = QtWidgets.QTableWidget()
+        three_days_table = QtWidgets.QTableWidget()
+        today_table = QtWidgets.QTableWidget()
+
+        overdue_table_header = overdue_table.horizontalHeader()
+        three_days_table_header = three_days_table.horizontalHeader()
+        today_table_header = today_table.horizontalHeader()
+
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+        self.tab3 = QWidget()
+
+        self.tab_1 = overdue_table
+        self.tab_1.setFixedSize(995, 550)
+        self.tab_1.setParent(self.tab1)
+
+        self.tab_2 = three_days_table
+        self.tab_2.setFixedSize(995, 550)
+        self.tab_2.setParent(self.tab2)
+
+        self.tab_3 = today_table
+        self.tab_3.setFixedSize(995, 550)
+        self.tab_3.setParent(self.tab3)
+
+        tabs.addTab(self.tab1, 'Overdue tasks')
+        tabs.addTab(self.tab2, 'Tasks of the 3 days')
+        tabs.addTab(self.tab3, 'Tasks of the day')
+
+        tables = [self.tab_1, self.tab_2, self.tab_3]
+        table_headers = [overdue_table_header, three_days_table_header, today_table_header]
+
+        # if len(rows_number) > 1:
+        for i in tables:
+            i.setRowCount(self.rows_number[-1][0])
+            i.setColumnCount(6)
+            i.setStyleSheet('QTableWidget{color: #D3D3D3}')
+            i.setHorizontalHeaderLabels(
+                ['Username', 'Date', 'Content', 'Steps', 'Status', 'Status set time'])
+
+        for i in table_headers:
+            i.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+            i.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        tabs.tabBarClicked.connect(self.filter_tasks)
+        self.setCentralWidget(tabs)
         self.centralWidget().show()
 
-    def update_status(self):
-        pass
-
     def combo_box_changed(self, value):
-        print(value)
-        print(self.all_tasks_table.currentRow())
         with self.con as db:
             rowid = self.all_tasks_table.currentRow() + 1
             cur = db.cursor()
-            cur.execute('UPDATE userstasks SET status = ? WHERE rowid = ?', (value, rowid))
+            cur.execute('UPDATE userstasks SET status = ? WHERE tid = ?', (value, rowid))
 
 
 # dialog window for add task func
@@ -388,6 +405,8 @@ class DialogWindow(QWidget):
         super(DialogWindow, self).__init__()
         self.setWindowTitle('Add task')
         self.setFixedSize(400, 300)
+
+        self.ask = AskUser()
 
         self.add_button = QtWidgets.QPushButton('Add')
         self.date_edit = QtWidgets.QDateEdit()
@@ -430,7 +449,6 @@ class DialogWindow(QWidget):
     # print(self.date_edit.)
 
     def dialog(self):
-        self.ask = AskUser()
         self.ask.show()
 
     def add_func(self):
