@@ -265,14 +265,18 @@ class TaskManagerUI(QMainWindow):
             if res is None:
                 break
             for column, item in enumerate(res):
-                combo = QComboBox()
-                combo.addItems(self.cbox_items)
-                combo.setStyleSheet('QComboBox{color: #D3D3D3};')
-                combo.setStyleSheet('selection-background-color: rgb(211, 211, 211)')
-                combo.setStyleSheet('color: rgb(211, 211, 211)')
                 display.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
-                display.setCellWidget(row, 4, combo)
-                combo.currentTextChanged.connect(self.combo_box_changed)
+                if isinstance(item, str) and item.title() in self.cbox_items:
+                    combo = QComboBox()
+                    combo.addItems(self.cbox_items)
+                    combo.setStyleSheet('QComboBox{color: #D3D3D3};')
+                    combo.setStyleSheet('selection-background-color: rgb(211, 211, 211)')
+                    combo.setStyleSheet('color: rgb(211, 211, 211)')
+                    index_ = combo.findText(str(item).title())
+                    if index_ != -1:
+                        combo.setCurrentText(item.title())
+                        display.setCellWidget(row, 4, combo)
+                    combo.currentTextChanged.connect(self.combo_box_changed)
             row += 1
 
     def all_tasks(self):
