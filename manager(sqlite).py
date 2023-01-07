@@ -13,14 +13,11 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, QHeader
 class ComboBoxStatus(QComboBox):
     def __init__(self):
         super().__init__()
-        cbox_items = ['Ongoing', 'Completed', 'Cancelled']
 
-    def addItems(self, cbox_items):
-        self.addItems(['Ongoing', 'Completed', 'Cancelled'])
+    def currentTextChanged(self, value, tid):
 
-    def currentTextChanged(self):
-        value = self.currentText()
-        TaskManagerUI().combo_box_changed(value)
+
+
 
 class MainWindow(QWidget):
     def __init__(self, parent=None):
@@ -221,7 +218,7 @@ class TaskManagerUI(QMainWindow):
             for column, item in enumerate(res):
                 display.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
                 if isinstance(item, str) and item.title() in self.cbox_items:
-                    combo = ComboBoxStatus()
+                    combo = QComboBox()
                     combo.addItems(self.cbox_items)
                     combo.setStyleSheet('QComboBox{color: #D3D3D3};')
                     combo.setStyleSheet('selection-background-color: rgb(211, 211, 211)')
