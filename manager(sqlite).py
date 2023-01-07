@@ -14,7 +14,9 @@ class ComboBoxStatus(QComboBox):
     def __init__(self):
         super().__init__()
 
-    def currentTextChanged(self, value, tid):
+    def currentTextChanged(self, value, index_):
+        self.setItemData(index_, value, QtCore.Qt.UserRole + 1)
+
 
 
 
@@ -218,12 +220,13 @@ class TaskManagerUI(QMainWindow):
             for column, item in enumerate(res):
                 display.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
                 if isinstance(item, str) and item.title() in self.cbox_items:
-                    combo = QComboBox()
+                    combo = ComboBoxStatus()
                     combo.addItems(self.cbox_items)
                     combo.setStyleSheet('QComboBox{color: #D3D3D3};')
                     combo.setStyleSheet('selection-background-color: rgb(211, 211, 211)')
                     combo.setStyleSheet('color: rgb(211, 211, 211)')
                     index_ = combo.findText(str(item).title())
+                    print(combo.itemData(index_, QtCore.Qt.UserRole + 1))
                     if index_ != -1:
                         combo.setCurrentText(item.title())
                         display.setCellWidget(row, 4, combo)
